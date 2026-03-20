@@ -1,10 +1,10 @@
 /* =============================================================
-   Thai Tax Planner — js/tax.js
+  PlanTax — js/tax.js
    Thai personal income tax calculator & deduction optimizer
    Tax year 2568 (2025)
    ============================================================= */
 
-'use strict';
+"use strict";
 
 /* ─────────────────────────────────────────────
    1. CONSTANTS
@@ -12,28 +12,55 @@
 
 /** Progressive tax brackets (upper bound inclusive, Infinity for last) */
 const TAX_BRACKETS = [
-  { min: 0,        max: 150_000,   rate: 0,    label: '0%' },
-  { min: 150_001,  max: 300_000,   rate: 0.05, label: '5%' },
-  { min: 300_001,  max: 500_000,   rate: 0.10, label: '10%' },
-  { min: 500_001,  max: 750_000,   rate: 0.15, label: '15%' },
-  { min: 750_001,  max: 1_000_000, rate: 0.20, label: '20%' },
-  { min: 1_000_001,max: 2_000_000, rate: 0.25, label: '25%' },
-  { min: 2_000_001,max: 5_000_000, rate: 0.30, label: '30%' },
-  { min: 5_000_001,max: Infinity,  rate: 0.35, label: '35%' },
+  { min: 0, max: 150_000, rate: 0, label: "0%" },
+  { min: 150_001, max: 300_000, rate: 0.05, label: "5%" },
+  { min: 300_001, max: 500_000, rate: 0.1, label: "10%" },
+  { min: 500_001, max: 750_000, rate: 0.15, label: "15%" },
+  { min: 750_001, max: 1_000_000, rate: 0.2, label: "20%" },
+  { min: 1_000_001, max: 2_000_000, rate: 0.25, label: "25%" },
+  { min: 2_000_001, max: 5_000_000, rate: 0.3, label: "30%" },
+  { min: 5_000_001, max: Infinity, rate: 0.35, label: "35%" },
 ];
 
-const PERSONAL_ALLOWANCE      = 60_000;
+const PERSONAL_ALLOWANCE = 60_000;
 const COMBINED_INVESTMENT_CAP = 500_000;
-const SSF_MAX                 = 200_000;
-const RMF_MAX                 = 500_000;
-const ESG_MAX                 = 300_000;
-const INVESTMENT_INCOME_PCT   = 0.30;    // 30% of income
-const SS_MAX                  = 9_000;
-const LIFE_INS_MAX            = 100_000;
-const HEALTH_INS_MAX          = 25_000;  // within life+health combined cap of 100k
-const PARENTS_HEALTH_MAX      = 15_000;
-const MORTGAGE_MAX            = 100_000;
-const DONATION_CAP_PCT        = 0.10;    // 10% of net income
+const SSF_MAX = 200_000;
+const RMF_MAX = 500_000;
+const ESG_MAX = 300_000;
+const INVESTMENT_INCOME_PCT = 0.3; // 30% of income
+const SS_MAX = 9_000;
+const LIFE_INS_MAX = 100_000;
+const HEALTH_INS_MAX = 25_000; // within life+health combined cap of 100k
+const PARENTS_HEALTH_MAX = 15_000;
+const MORTGAGE_MAX = 100_000;
+const DONATION_CAP_PCT = 0.1; // 10% of net income
+
+/** Ordered list of plannable deduction categories (default priority top → bottom) */
+const PRIORITY_ITEMS = [
+  { id: "ssf", label: "SSF — กองทุนรวมเพื่อการออม", category: "invest" },
+  { id: "rmf", label: "RMF — กองทุนรวมเพื่อการเลี้ยงชีพ", category: "invest" },
+  {
+    id: "esg",
+    label: "Thai ESG — กองทุนรวมไทยเพื่อความยั่งยืน",
+    category: "invest",
+  },
+  {
+    id: "eduDon",
+    label: "บริจาคเพื่อการศึกษา / กีฬา / สาธารณสุข (2×)",
+    category: "donate",
+  },
+  {
+    id: "lifeIns",
+    label: "ประกันชีวิต / เงินฝากสะสมทรัพย์",
+    category: "insure",
+  },
+  { id: "healthIns", label: "ประกันสุขภาพ", category: "insure" },
+  { id: "parentHlth", label: "ประกันสุขภาพบิดา/มารดา", category: "insure" },
+  { id: "regDon", label: "เงินบริจาคทั่วไป", category: "donate" },
+];
+
+/** Current user-selected priority order (array of PRIORITY_ITEMS ids) */
+let currentPriorityOrder = PRIORITY_ITEMS.map((p) => p.id);
 
 /* ─────────────────────────────────────────────
    2. TAX CALCULATION
@@ -49,7 +76,8 @@ function calcTax(taxableIncome) {
   let tax = 0;
   let prev = 0;
   for (const b of TAX_BRACKETS) {
-    const top = b.max === Infinity ? taxableIncome : Math.min(taxableIncome, b.max);
+    const top =
+      b.max === Infinity ? taxableIncome : Math.min(taxableIncome, b.max);
     if (top <= prev) break;
     tax += (top - prev) * b.rate;
     prev = b.max === Infinity ? taxableIncome : b.max;
@@ -80,7 +108,10 @@ function getMarginalBracket(taxableIncome) {
  */
 function incomeInBracket(taxableIncome, bracket, prevMax) {
   if (taxableIncome < bracket.min) return 0;
-  const top = bracket.max === Infinity ? taxableIncome : Math.min(taxableIncome, bracket.max);
+  const top =
+    bracket.max === Infinity
+      ? taxableIncome
+      : Math.min(taxableIncome, bracket.max);
   return Math.max(0, top - prevMax);
 }
 
@@ -91,8 +122,8 @@ function incomeInBracket(taxableIncome, bracket, prevMax) {
  * @returns {number}
  */
 function calcExpenseDeduction(income, incomeType) {
-  if (incomeType === 'freelance') return Math.min(income * 0.60, 600_000);
-  return Math.min(income * 0.50, 100_000);
+  if (incomeType === "freelance") return Math.min(income * 0.6, 600_000);
+  return Math.min(income * 0.5, 100_000);
 }
 
 /* ─────────────────────────────────────────────
@@ -111,54 +142,94 @@ function buildDeductionSummary(income, incomeType, d) {
   const expenseDeduction = calcExpenseDeduction(income, incomeType);
 
   // Personal & family
-  const spouseAllowance    = d.hasSpouse ? 60_000 : 0;
-  const childAllowance     = Math.max(0, d.numChildren || 0) * 30_000;
-  const parentAllowance    = Math.min(Math.max(0, d.numParents || 0), 4) * 30_000;
-  const disabilityAllowance= Math.max(0, d.numDisabled || 0) * 60_000;
+  const spouseAllowance = d.hasSpouse ? 60_000 : 0;
+  const childAllowance = Math.max(0, d.numChildren || 0) * 30_000;
+  const parentAllowance = Math.min(Math.max(0, d.numParents || 0), 4) * 30_000;
+  const disabilityAllowance = Math.max(0, d.numDisabled || 0) * 60_000;
 
   // Insurance (cap each individually, then apply combined life+health cap of 100k)
-  const ss           = Math.min(Math.max(0, d.socialSecurity || 0), SS_MAX);
-  const lifeIns      = Math.min(Math.max(0, d.lifeInsurance  || 0), LIFE_INS_MAX);
-  const healthRaw    = Math.min(Math.max(0, d.healthInsurance || 0), HEALTH_INS_MAX);
+  const ss = Math.min(Math.max(0, d.socialSecurity || 0), SS_MAX);
+  const lifeIns = Math.min(Math.max(0, d.lifeInsurance || 0), LIFE_INS_MAX);
+  const healthRaw = Math.min(
+    Math.max(0, d.healthInsurance || 0),
+    HEALTH_INS_MAX,
+  );
   // Combined life + health cap = 100k
-  const healthIns    = Math.min(healthRaw, Math.max(0, LIFE_INS_MAX - lifeIns));
-  const parentsHealth= Math.min(Math.max(0, d.parentsHealthIns || 0), PARENTS_HEALTH_MAX);
+  const healthIns = Math.min(healthRaw, Math.max(0, LIFE_INS_MAX - lifeIns));
+  const parentsHealth = Math.min(
+    Math.max(0, d.parentsHealthIns || 0),
+    PARENTS_HEALTH_MAX,
+  );
 
   // Investments (individual caps + combined cap)
-  const pvf          = Math.max(0, d.pvf || 0);  // provident fund / GPF
-  const ssfRaw       = Math.min(Math.max(0, d.ssf || 0), Math.min(income * INVESTMENT_INCOME_PCT, SSF_MAX));
-  const rmfRaw       = Math.min(Math.max(0, d.rmf || 0), Math.min(income * INVESTMENT_INCOME_PCT, RMF_MAX));
-  const esgRaw       = Math.min(Math.max(0, d.esg || 0), Math.min(income * INVESTMENT_INCOME_PCT, ESG_MAX));
+  const pvf = Math.max(0, d.pvf || 0); // provident fund / GPF
+  const ssfRaw = Math.min(
+    Math.max(0, d.ssf || 0),
+    Math.min(income * INVESTMENT_INCOME_PCT, SSF_MAX),
+  );
+  const rmfRaw = Math.min(
+    Math.max(0, d.rmf || 0),
+    Math.min(income * INVESTMENT_INCOME_PCT, RMF_MAX),
+  );
+  const esgRaw = Math.min(
+    Math.max(0, d.esg || 0),
+    Math.min(income * INVESTMENT_INCOME_PCT, ESG_MAX),
+  );
 
   // Enforce combined cap (pvf + ssf + rmf + esg ≤ 500k)
   let investRemain = Math.max(0, COMBINED_INVESTMENT_CAP - pvf);
-  const ssf  = Math.min(ssfRaw, investRemain);  investRemain -= ssf;
-  const rmf  = Math.min(rmfRaw, investRemain);  investRemain -= rmf;
-  const esg  = Math.min(esgRaw, investRemain);
+  const ssf = Math.min(ssfRaw, investRemain);
+  investRemain -= ssf;
+  const rmf = Math.min(rmfRaw, investRemain);
+  investRemain -= rmf;
+  const esg = Math.min(esgRaw, investRemain);
 
   // Other
   const mortgage = Math.min(Math.max(0, d.mortgageInterest || 0), MORTGAGE_MAX);
 
-  const totalExistingAdditional = spouseAllowance + childAllowance + parentAllowance +
-    disabilityAllowance + ss + lifeIns + healthIns + parentsHealth +
-    Math.min(pvf + ssf + rmf + esg, COMBINED_INVESTMENT_CAP) + mortgage;
+  const totalExistingAdditional =
+    spouseAllowance +
+    childAllowance +
+    parentAllowance +
+    disabilityAllowance +
+    ss +
+    lifeIns +
+    healthIns +
+    parentsHealth +
+    Math.min(pvf + ssf + rmf + esg, COMBINED_INVESTMENT_CAP) +
+    mortgage;
 
-  const totalDeductions = expenseDeduction + PERSONAL_ALLOWANCE + totalExistingAdditional;
-  const taxableIncome   = Math.max(0, income - totalDeductions);
-  const currentTax      = calcTax(taxableIncome);
-  const effectiveRate   = income > 0 ? (currentTax / income) * 100 : 0;
+  const totalDeductions =
+    expenseDeduction + PERSONAL_ALLOWANCE + totalExistingAdditional;
+  const taxableIncome = Math.max(0, income - totalDeductions);
+  const currentTax = calcTax(taxableIncome);
+  const effectiveRate = income > 0 ? (currentTax / income) * 100 : 0;
   const marginalBracket = getMarginalBracket(taxableIncome);
 
   return {
-    income, incomeType,
+    income,
+    incomeType,
     // breakdown lines
     expenseDeduction,
     personalAllowance: PERSONAL_ALLOWANCE,
-    spouseAllowance, childAllowance, parentAllowance, disabilityAllowance,
-    ss, lifeIns, healthIns, parentsHealth,
-    pvf, ssf, rmf, esg,
+    spouseAllowance,
+    childAllowance,
+    parentAllowance,
+    disabilityAllowance,
+    ss,
+    lifeIns,
+    healthIns,
+    parentsHealth,
+    pvf,
+    ssf,
+    rmf,
+    esg,
     mortgage,
-    totalDeductions, taxableIncome, currentTax, effectiveRate, marginalBracket,
+    totalDeductions,
+    taxableIncome,
+    currentTax,
+    effectiveRate,
+    marginalBracket,
   };
 }
 
@@ -175,36 +246,53 @@ function buildDeductionSummary(income, incomeType, d) {
 function calcAvailableCapacity(income, summary) {
   // Investment remaining within combined cap
   const usedInvestment = summary.pvf + summary.ssf + summary.rmf + summary.esg;
-  const investRemain   = Math.max(0, COMBINED_INVESTMENT_CAP - usedInvestment);
+  const investRemain = Math.max(0, COMBINED_INVESTMENT_CAP - usedInvestment);
 
   const ssfCap = Math.min(income * INVESTMENT_INCOME_PCT, SSF_MAX);
   const rmfCap = Math.min(income * INVESTMENT_INCOME_PCT, RMF_MAX);
   const esgCap = Math.min(income * INVESTMENT_INCOME_PCT, ESG_MAX);
 
   let remInv = investRemain;
-  const availSSF = Math.min(Math.max(0, ssfCap - summary.ssf), remInv); remInv -= availSSF;
-  const availRMF = Math.min(Math.max(0, rmfCap - summary.rmf), remInv); remInv -= availRMF;
+  const availSSF = Math.min(Math.max(0, ssfCap - summary.ssf), remInv);
+  remInv -= availSSF;
+  const availRMF = Math.min(Math.max(0, rmfCap - summary.rmf), remInv);
+  remInv -= availRMF;
   const availESG = Math.min(Math.max(0, esgCap - summary.esg), remInv);
 
   // Insurance remaining
   const usedCombinedIns = summary.lifeIns + summary.healthIns;
-  const availLifeIns    = Math.max(0, LIFE_INS_MAX - summary.lifeIns -
-    Math.max(0, usedCombinedIns - summary.lifeIns));
-  // remaining health: max(0, 25k - used_health) but also within combined 100k
-  const availHealthIns  = Math.min(
-    Math.max(0, HEALTH_INS_MAX - summary.healthIns),
-    Math.max(0, LIFE_INS_MAX - usedCombinedIns)
+  const availLifeIns = Math.max(
+    0,
+    LIFE_INS_MAX -
+      summary.lifeIns -
+      Math.max(0, usedCombinedIns - summary.lifeIns),
   );
-  const availParentsHealth = Math.max(0, PARENTS_HEALTH_MAX - summary.parentsHealth);
+  // remaining health: max(0, 25k - used_health) but also within combined 100k
+  const availHealthIns = Math.min(
+    Math.max(0, HEALTH_INS_MAX - summary.healthIns),
+    Math.max(0, LIFE_INS_MAX - usedCombinedIns),
+  );
+  const availParentsHealth = Math.max(
+    0,
+    PARENTS_HEALTH_MAX - summary.parentsHealth,
+  );
 
   // Donation cap: 10% of net income before donations
   // "net income before donations" ≈ taxableIncome (donations aren't yet applied)
-  const donationBase  = summary.taxableIncome;
-  const eduDonCap     = Math.floor(donationBase * DONATION_CAP_PCT); // deduction cap for edu donation
-  const regDonCap     = Math.floor(donationBase * DONATION_CAP_PCT); // deduction cap for regular donation
+  const donationBase = summary.taxableIncome;
+  const eduDonCap = Math.floor(donationBase * DONATION_CAP_PCT); // deduction cap for edu donation
+  const regDonCap = Math.floor(donationBase * DONATION_CAP_PCT); // deduction cap for regular donation
 
-  return { availSSF, availRMF, availESG, availLifeIns, availHealthIns, availParentsHealth,
-           eduDonCap, regDonCap };
+  return {
+    availSSF,
+    availRMF,
+    availESG,
+    availLifeIns,
+    availHealthIns,
+    availParentsHealth,
+    eduDonCap,
+    regDonCap,
+  };
 }
 
 /* ─────────────────────────────────────────────
@@ -213,96 +301,160 @@ function calcAvailableCapacity(income, summary) {
 
 /**
  * Build a recommendation plan to achieve `neededDeduction` of additional deduction
- * with minimum permanent cash outflow.
+ * with minimum permanent cash outflow, respecting the user-defined priority order.
  *
- * Priority:
- *   1. SSF  (investment – money returned after lock-up)
- *   2. RMF  (investment – money returned at retirement)
- *   3. Thai ESG (investment – money returned)
- *   4. Education donation (2× deduction, spend half, permanent)
- *   5. Life insurance (spend = deduction, but get coverage)
- *   6. Health insurance
- *   7. Parents' health insurance
- *   8. Regular donation (1× deduction, permanent)
- *
- * @param {number} neededDeduction  Additional taxable income reduction required
- * @param {object} cap              Output of calcAvailableCapacity
- * @param {number} marginalRate     Current marginal tax rate (decimal)
+ * @param {number}   neededDeduction  Additional taxable income reduction required
+ * @param {object}   cap              Output of calcAvailableCapacity
+ * @param {number}   marginalRate     Current marginal tax rate (decimal)
+ * @param {string[]} priorityOrder    Ordered array of PRIORITY_ITEMS ids (first = highest priority)
  * @returns {{ plan: Array, achievable: boolean, remainingShortfall: number }}
  */
-function buildOptimalPlan(neededDeduction, cap, marginalRate) {
+function buildOptimalPlan(neededDeduction, cap, marginalRate, priorityOrder) {
   const plan = [];
   let rem = neededDeduction;
 
   function addStep(type, category, deductionAmt, spendAmt, note) {
     if (deductionAmt <= 0) return;
     const taxSaved = Math.round(deductionAmt * marginalRate);
-    plan.push({ type, category, deductionAmt: Math.round(deductionAmt),
-                spendAmt: Math.round(spendAmt), taxSaved, note });
+    plan.push({
+      type,
+      category,
+      deductionAmt: Math.round(deductionAmt),
+      spendAmt: Math.round(spendAmt),
+      taxSaved,
+      note,
+    });
     rem -= deductionAmt;
   }
 
-  // 1. SSF
-  if (rem > 0 && cap.availSSF > 0) {
-    const use = Math.min(rem, cap.availSSF);
-    addStep('SSF', 'invest', use, use, 'ลงทุน – ได้คืนเมื่อถอน (ถือครอง 10 ปี)');
+  for (const id of priorityOrder) {
+    if (rem <= 0) break;
+    switch (id) {
+      case "ssf": {
+        if (cap.availSSF > 0) {
+          const use = Math.min(rem, cap.availSSF);
+          addStep(
+            "SSF",
+            "invest",
+            use,
+            use,
+            "ลงทุน – ได้คืนเมื่อถอน (ถือครอง 10 ปี)",
+          );
+        }
+        break;
+      }
+      case "rmf": {
+        if (cap.availRMF > 0) {
+          const use = Math.min(rem, cap.availRMF);
+          addStep(
+            "RMF",
+            "invest",
+            use,
+            use,
+            "ลงทุน – ได้คืนเมื่ออายุ 55 ปี (ถือครอง 5 ปี)",
+          );
+        }
+        break;
+      }
+      case "esg": {
+        if (cap.availESG > 0) {
+          const use = Math.min(rem, cap.availESG);
+          addStep(
+            "Thai ESG",
+            "invest",
+            use,
+            use,
+            "ลงทุน – ได้คืนหลังถือครอง 5 ปี",
+          );
+        }
+        break;
+      }
+      case "eduDon": {
+        if (cap.eduDonCap > 0) {
+          const usableDeduction = Math.min(rem, cap.eduDonCap);
+          // Education/sport/health donations get a 2× deduction: pay half, deduct full amount
+          addStep(
+            "บริจาคเพื่อการศึกษา / กีฬา / สาธารณสุข",
+            "donate",
+            usableDeduction,
+            Math.ceil(usableDeduction / 2),
+            "ลดหย่อนได้ 2 เท่าของเงินบริจาค (สูงสุด 10% ของเงินได้สุทธิ)",
+          );
+        }
+        break;
+      }
+      case "lifeIns": {
+        if (cap.availLifeIns > 0) {
+          const use = Math.min(rem, cap.availLifeIns);
+          addStep(
+            "ประกันชีวิต / เงินฝากสะสมทรัพย์",
+            "insure",
+            use,
+            use,
+            "ได้รับความคุ้มครองชีวิต",
+          );
+        }
+        break;
+      }
+      case "healthIns": {
+        if (cap.availHealthIns > 0) {
+          const use = Math.min(rem, cap.availHealthIns);
+          addStep(
+            "ประกันสุขภาพ",
+            "insure",
+            use,
+            use,
+            "ได้รับความคุ้มครองสุขภาพ",
+          );
+        }
+        break;
+      }
+      case "parentHlth": {
+        if (cap.availParentsHealth > 0) {
+          const use = Math.min(rem, cap.availParentsHealth);
+          addStep(
+            "ประกันสุขภาพบิดา/มารดา",
+            "insure",
+            use,
+            use,
+            "ได้รับความคุ้มครองสุขภาพบิดามารดา",
+          );
+        }
+        break;
+      }
+      case "regDon": {
+        if (cap.regDonCap > 0) {
+          const use = Math.min(rem, cap.regDonCap);
+          addStep(
+            "เงินบริจาคทั่วไป",
+            "donate",
+            use,
+            use,
+            "บริจาคเพื่อสาธารณประโยชน์ (สูงสุด 10% ของเงินได้สุทธิ)",
+          );
+        }
+        break;
+      }
+      default:
+        break;
+    }
   }
 
-  // 2. RMF
-  if (rem > 0 && cap.availRMF > 0) {
-    const use = Math.min(rem, cap.availRMF);
-    addStep('RMF', 'invest', use, use, 'ลงทุน – ได้คืนเมื่ออายุ 55 ปี (ถือครอง 5 ปี)');
-  }
-
-  // 3. Thai ESG
-  if (rem > 0 && cap.availESG > 0) {
-    const use = Math.min(rem, cap.availESG);
-    addStep('Thai ESG', 'invest', use, use, 'ลงทุน – ได้คืนหลังถือครอง 5 ปี');
-  }
-
-  // 4. Education donation (2× deduction → spend only half)
-  if (rem > 0 && cap.eduDonCap > 0) {
-    const usableDeduction = Math.min(rem, cap.eduDonCap);
-    const spend = Math.ceil(usableDeduction / 2);  // donate half, get 2× deduction
-    addStep('บริจาคเพื่อการศึกษา / กีฬา / สาธารณสุข', 'donate',
-      usableDeduction, spend, 'ลดหย่อนได้ 2 เท่าของเงินบริจาค (สูงสุด 10% ของเงินได้สุทธิ)');
-  }
-
-  // 5. Life insurance (remaining capacity)
-  if (rem > 0 && cap.availLifeIns > 0) {
-    const use = Math.min(rem, cap.availLifeIns);
-    addStep('ประกันชีวิต / เงินฝากสะสมทรัพย์', 'insure', use, use, 'ได้รับความคุ้มครองชีวิต');
-  }
-
-  // 6. Health insurance
-  if (rem > 0 && cap.availHealthIns > 0) {
-    const use = Math.min(rem, cap.availHealthIns);
-    addStep('ประกันสุขภาพ', 'insure', use, use, 'ได้รับความคุ้มครองสุขภาพ');
-  }
-
-  // 7. Parents' health insurance
-  if (rem > 0 && cap.availParentsHealth > 0) {
-    const use = Math.min(rem, cap.availParentsHealth);
-    addStep('ประกันสุขภาพบิดา/มารดา', 'insure', use, use, 'ได้รับความคุ้มครองสุขภาพบิดามารดา');
-  }
-
-  // 8. Regular donation (cap same as edu donation – shared 10% limit here simplified)
-  if (rem > 0 && cap.regDonCap > 0) {
-    const use = Math.min(rem, cap.regDonCap);
-    addStep('เงินบริจาคทั่วไป', 'donate', use, use, 'บริจาคเพื่อสาธารณประโยชน์ (สูงสุด 10% ของเงินได้สุทธิ)');
-  }
-
-  return { plan, achievable: rem <= 0, remainingShortfall: Math.max(0, Math.round(rem)) };
+  return {
+    plan,
+    achievable: rem <= 0,
+    remainingShortfall: Math.max(0, Math.round(rem)),
+  };
 }
 
 /* ─────────────────────────────────────────────
    6. FORMATTING UTILITIES
    ───────────────────────────────────────────── */
 
-const FMT = new Intl.NumberFormat('th-TH');
-const fmtBaht   = (n) => FMT.format(Math.round(n)) + ' บาท';
+const FMT = new Intl.NumberFormat("th-TH");
+const fmtBaht = (n) => FMT.format(Math.round(n)) + " บาท";
 const fmtNumber = (n) => FMT.format(Math.round(n));
-const fmtPct    = (n) => n.toFixed(2) + '%';
+const fmtPct = (n) => n.toFixed(2) + "%";
 
 /* ─────────────────────────────────────────────
    7. RESULTS RENDERING
@@ -310,10 +462,11 @@ const fmtPct    = (n) => n.toFixed(2) + '%';
 
 /**
  * Build and inject the results HTML into #results-container.
- * @param {object} summary  from buildDeductionSummary
+ * @param {object}   summary       from buildDeductionSummary
+ * @param {string[]} priorityOrder ordered array of PRIORITY_ITEMS ids
  */
-function renderResults(summary) {
-  const container = document.getElementById('results-container');
+function renderResults(summary, priorityOrder) {
+  const container = document.getElementById("results-container");
   const cap = calcAvailableCapacity(summary.income, summary);
   const marginalRate = summary.marginalBracket.rate;
 
@@ -344,26 +497,33 @@ function renderResults(summary) {
 
   // ── Deduction breakdown ────────────────────────────────
   const rows = [
-    ['ค่าใช้จ่าย (หักอัตโนมัติ)',   summary.expenseDeduction],
-    ['ค่าลดหย่อนส่วนตัว',           summary.personalAllowance],
-    summary.spouseAllowance   ? ['คู่สมรส',                   summary.spouseAllowance]   : null,
-    summary.childAllowance    ? ['บุตร',                      summary.childAllowance]    : null,
-    summary.parentAllowance   ? ['บิดามารดา',                 summary.parentAllowance]   : null,
-    summary.disabilityAllowance?['ผู้พิการ/ทุพพลภาพ',         summary.disabilityAllowance]:null,
-    summary.ss                ? ['เงินประกันสังคม',            summary.ss]                : null,
-    summary.lifeIns           ? ['ประกันชีวิต',               summary.lifeIns]           : null,
-    summary.healthIns         ? ['ประกันสุขภาพ',              summary.healthIns]         : null,
-    summary.parentsHealth     ? ['ประกันสุขภาพบิดามารดา',     summary.parentsHealth]     : null,
-    summary.pvf               ? ['กองทุนสำรองเลี้ยงชีพ/กบข.',  summary.pvf]               : null,
-    summary.ssf               ? ['SSF',                      summary.ssf]               : null,
-    summary.rmf               ? ['RMF',                      summary.rmf]               : null,
-    summary.esg               ? ['Thai ESG',                 summary.esg]               : null,
-    summary.mortgage          ? ['ดอกเบี้ยกู้ซื้อบ้าน',       summary.mortgage]          : null,
+    ["ค่าใช้จ่าย (หักอัตโนมัติ)", summary.expenseDeduction],
+    ["ค่าลดหย่อนส่วนตัว", summary.personalAllowance],
+    summary.spouseAllowance ? ["คู่สมรส", summary.spouseAllowance] : null,
+    summary.childAllowance ? ["บุตร", summary.childAllowance] : null,
+    summary.parentAllowance ? ["บิดามารดา", summary.parentAllowance] : null,
+    summary.disabilityAllowance
+      ? ["ผู้พิการ/ทุพพลภาพ", summary.disabilityAllowance]
+      : null,
+    summary.ss ? ["เงินประกันสังคม", summary.ss] : null,
+    summary.lifeIns ? ["ประกันชีวิต", summary.lifeIns] : null,
+    summary.healthIns ? ["ประกันสุขภาพ", summary.healthIns] : null,
+    summary.parentsHealth
+      ? ["ประกันสุขภาพบิดามารดา", summary.parentsHealth]
+      : null,
+    summary.pvf ? ["กองทุนสำรองเลี้ยงชีพ/กบข.", summary.pvf] : null,
+    summary.ssf ? ["SSF", summary.ssf] : null,
+    summary.rmf ? ["RMF", summary.rmf] : null,
+    summary.esg ? ["Thai ESG", summary.esg] : null,
+    summary.mortgage ? ["ดอกเบี้ยกู้ซื้อบ้าน", summary.mortgage] : null,
   ].filter(Boolean);
 
-  const breakdownRows = rows.map(([label, amt]) =>
-    `<tr><td>${label}</td><td class="amt negative">− ${fmtNumber(amt)}</td></tr>`
-  ).join('');
+  const breakdownRows = rows
+    .map(
+      ([label, amt]) =>
+        `<tr><td>${label}</td><td class="amt negative">− ${fmtNumber(amt)}</td></tr>`,
+    )
+    .join("");
 
   const breakdownHTML = `
     <p class="section-title">ค่าลดหย่อนและภาษีสุทธิ</p>
@@ -381,92 +541,132 @@ function renderResults(summary) {
 
   // ── Tax bracket ladder ─────────────────────────────────
   const maxBarValue = Math.max(summary.taxableIncome, 1);
-  const barColors   = { 0:'.bar-0', 5:'.bar-5', 10:'.bar-10', 15:'.bar-15',
-                        20:'.bar-20', 25:'.bar-25', 30:'.bar-30', 35:'.bar-35' };
+  const barColors = {
+    0: ".bar-0",
+    5: ".bar-5",
+    10: ".bar-10",
+    15: ".bar-15",
+    20: ".bar-20",
+    25: ".bar-25",
+    30: ".bar-30",
+    35: ".bar-35",
+  };
 
   const ladderRows = TAX_BRACKETS.map((b) => {
-    if (b.min > summary.taxableIncome + 1 && b.min > 150_000) return '';
+    if (b.min > summary.taxableIncome + 1 && b.min > 150_000) return "";
     const incomeFalls = summary.taxableIncome >= b.min;
     const taxInBracket = incomeFalls
-      ? calcTax(Math.min(summary.taxableIncome, b.max === Infinity ? summary.taxableIncome : b.max))
-        - calcTax(Math.max(0, b.min - 1))
+      ? calcTax(
+          Math.min(
+            summary.taxableIncome,
+            b.max === Infinity ? summary.taxableIncome : b.max,
+          ),
+        ) - calcTax(Math.max(0, b.min - 1))
       : 0;
     const width = incomeFalls
-      ? Math.round(Math.min(
-          (Math.min(summary.taxableIncome, b.max === Infinity ? summary.taxableIncome : b.max)
-           - (b.min - 1)) / maxBarValue * 100, 100))
+      ? Math.round(
+          Math.min(
+            ((Math.min(
+              summary.taxableIncome,
+              b.max === Infinity ? summary.taxableIncome : b.max,
+            ) -
+              (b.min - 1)) /
+              maxBarValue) *
+              100,
+            100,
+          ),
+        )
       : 0;
     const isCurrent = summary.marginalBracket.rate === b.rate && incomeFalls;
-    const colorClass = (barColors[Math.round(b.rate * 100)] || '.bar-35').slice(1);
-    const label = b.max === Infinity
-      ? `${fmtNumber(b.min)} บาทขึ้นไป`
-      : `${fmtNumber(b.min)} – ${fmtNumber(b.max)} บาท`;
+    const colorClass = (barColors[Math.round(b.rate * 100)] || ".bar-35").slice(
+      1,
+    );
+    const label =
+      b.max === Infinity
+        ? `${fmtNumber(b.min)} บาทขึ้นไป`
+        : `${fmtNumber(b.min)} – ${fmtNumber(b.max)} บาท`;
 
     return `
-      <div class="bracket-row ${isCurrent ? 'current-bracket' : ''}">
+      <div class="bracket-row ${isCurrent ? "current-bracket" : ""}">
         <div class="br-label">${b.label}</div>
         <div class="br-bar-wrap">
           <div class="br-bar ${colorClass}" style="width:${width}%">
-            ${width > 15 ? label : ''}
+            ${width > 15 ? label : ""}
           </div>
         </div>
-        <div class="br-tax-amt">${taxInBracket > 0 ? fmtNumber(taxInBracket) + ' บ.' : '–'}</div>
+        <div class="br-tax-amt">${taxInBracket > 0 ? fmtNumber(taxInBracket) + " บ." : "–"}</div>
       </div>`;
-  }).join('');
+  }).join("");
 
   // ── Detailed bracket table ──────────────────────────────
   const marginalBracketIndex = TAX_BRACKETS.indexOf(summary.marginalBracket);
 
   // Pre-compute cumulative max tax per bracket
   const cumulativeMaxTaxes = TAX_BRACKETS.reduce((acc, b, idx) => {
-    const prevMax        = idx === 0 ? 0 : TAX_BRACKETS[idx - 1].max;
-    const ceiling        = b.max === Infinity ? null : (b.max - prevMax);
-    const maxTax         = b.rate === 0 ? 0 : (ceiling === null ? null : Math.round(ceiling * b.rate));
-    const prev           = idx === 0 ? 0 : (acc[idx - 1] ?? 0);
+    const prevMax = idx === 0 ? 0 : TAX_BRACKETS[idx - 1].max;
+    const ceiling = b.max === Infinity ? null : b.max - prevMax;
+    const maxTax =
+      b.rate === 0 ? 0 : ceiling === null ? null : Math.round(ceiling * b.rate);
+    const prev = idx === 0 ? 0 : (acc[idx - 1] ?? 0);
     acc.push(b.max === Infinity ? null : prev + (maxTax ?? 0));
     return acc;
   }, []);
 
   const bracketTableRows = TAX_BRACKETS.map((b, idx) => {
-    const prevMax          = idx === 0 ? 0 : TAX_BRACKETS[idx - 1].max;
-    const bracketCeiling   = b.max === Infinity ? null : (b.max - prevMax);
-    const maxTaxInBracket  = b.rate === 0 ? 0
-      : (bracketCeiling === null ? null : Math.round(bracketCeiling * b.rate));
+    const prevMax = idx === 0 ? 0 : TAX_BRACKETS[idx - 1].max;
+    const bracketCeiling = b.max === Infinity ? null : b.max - prevMax;
+    const maxTaxInBracket =
+      b.rate === 0
+        ? 0
+        : bracketCeiling === null
+          ? null
+          : Math.round(bracketCeiling * b.rate);
     const cumulativeMaxTax = cumulativeMaxTaxes[idx];
 
-    const userInBracket    = incomeInBracket(summary.taxableIncome, b, prevMax);
+    const userInBracket = incomeInBracket(summary.taxableIncome, b, prevMax);
     const userTaxInBracket = Math.round(userInBracket * b.rate);
-    const isCurrent        = idx === marginalBracketIndex;
+    const isCurrent = idx === marginalBracketIndex;
 
-    const rangeLabel    = b.max === Infinity
-      ? `${fmtNumber(b.min)} ขึ้นไป`
-      : `${fmtNumber(b.min)} – ${fmtNumber(b.max)}`;
-    const ceilingLabel  = bracketCeiling !== null ? fmtNumber(bracketCeiling) : 'ไม่จำกัด';
-    const rateLabel     = b.rate === 0 ? 'ยกเว้น' : b.label;
-    const maxTaxLabel   = maxTaxInBracket === null ? 'ไม่จำกัด' : fmtNumber(maxTaxInBracket);
-    const cumMaxLabel   = cumulativeMaxTax === null ? 'ไม่จำกัด' : fmtNumber(cumulativeMaxTax);
-    const userInLabel   = userInBracket > 0 ? fmtNumber(userInBracket) : '–';
-    const userTaxLabel  = userInBracket > 0
-      ? (userTaxInBracket > 0 ? fmtNumber(userTaxInBracket) : '0')
-      : '–';
+    const rangeLabel =
+      b.max === Infinity
+        ? `${fmtNumber(b.min)} ขึ้นไป`
+        : `${fmtNumber(b.min)} – ${fmtNumber(b.max)}`;
+    const ceilingLabel =
+      bracketCeiling !== null ? fmtNumber(bracketCeiling) : "ไม่จำกัด";
+    const rateLabel = b.rate === 0 ? "ยกเว้น" : b.label;
+    const maxTaxLabel =
+      maxTaxInBracket === null ? "ไม่จำกัด" : fmtNumber(maxTaxInBracket);
+    const cumMaxLabel =
+      cumulativeMaxTax === null ? "ไม่จำกัด" : fmtNumber(cumulativeMaxTax);
+    const userInLabel = userInBracket > 0 ? fmtNumber(userInBracket) : "–";
+    const userTaxLabel =
+      userInBracket > 0
+        ? userTaxInBracket > 0
+          ? fmtNumber(userTaxInBracket)
+          : "0"
+        : "–";
 
     return `
-      <tr class="${isCurrent ? 'bdt-current' : ''}">
+      <tr class="${isCurrent ? "bdt-current" : ""}">
         <td class="bdt-num">${idx + 1}</td>
         <td>${rangeLabel}</td>
         <td class="bdt-num-col">${ceilingLabel}</td>
-        <td class="bdt-rate ${isCurrent ? 'bdt-rate-current' : ''}">${rateLabel}</td>
+        <td class="bdt-rate ${isCurrent ? "bdt-rate-current" : ""}">${rateLabel}</td>
         <td class="bdt-num-col">${maxTaxLabel}</td>
         <td class="bdt-num-col">${cumMaxLabel}</td>
         <td class="bdt-num-col bdt-user">${userInLabel}</td>
         <td class="bdt-num-col bdt-user">${userTaxLabel}</td>
       </tr>`;
-  }).join('');
+  }).join("");
 
   // User position summary
-  const prevMaxForMarginal = marginalBracketIndex === 0 ? 0 : TAX_BRACKETS[marginalBracketIndex - 1].max;
+  const prevMaxForMarginal =
+    marginalBracketIndex === 0 ? 0 : TAX_BRACKETS[marginalBracketIndex - 1].max;
   const userInMarginalBracket = incomeInBracket(
-    summary.taxableIncome, summary.marginalBracket, prevMaxForMarginal);
+    summary.taxableIncome,
+    summary.marginalBracket,
+    prevMaxForMarginal,
+  );
 
   const ladderHTML = `
     <div class="bracket-section">
@@ -507,10 +707,10 @@ function renderResults(summary) {
 
   // ── Target bracket recommendations ────────────────────
   const lowerBrackets = TAX_BRACKETS.filter(
-    (b) => b.rate < marginalRate && b.max !== Infinity
+    (b) => b.rate < marginalRate && b.max !== Infinity,
   );
 
-  let targetsHTML = '';
+  let targetsHTML = "";
   if (lowerBrackets.length === 0) {
     targetsHTML = `<div class="zero-tax-msg">
       <span class="ztm-icon">🎉</span>
@@ -518,26 +718,46 @@ function renderResults(summary) {
     </div>`;
   } else {
     const chevronSVG = `<svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M3 5l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
-    const cardItems = lowerBrackets.reverse().map((target, idx) => {
-      const targetTaxableIncome = target.max;
-      const neededDeduction     = Math.max(0, summary.taxableIncome - targetTaxableIncome);
-      if (neededDeduction === 0) return '';
+    const cardItems = lowerBrackets
+      .reverse()
+      .map((target, idx) => {
+        const targetTaxableIncome = target.max;
+        const neededDeduction = Math.max(
+          0,
+          summary.taxableIncome - targetTaxableIncome,
+        );
+        if (neededDeduction === 0) return "";
 
-      const targetTax   = calcTax(targetTaxableIncome);
-      const taxSaving   = summary.currentTax - targetTax;
-      const { plan, achievable, remainingShortfall } =
-        buildOptimalPlan(neededDeduction, cap, marginalRate);
+        const targetTax = calcTax(targetTaxableIncome);
+        const taxSaving = summary.currentTax - targetTax;
+        const { plan, achievable, remainingShortfall } = buildOptimalPlan(
+          neededDeduction,
+          cap,
+          marginalRate,
+          priorityOrder,
+        );
 
-      const totalSpend     = plan.reduce((s, p) => s + p.spendAmt, 0);
-      const totalInvest    = plan.filter((p) => p.category === 'invest')
-                                 .reduce((s, p) => s + p.spendAmt, 0);
-      const totalPermanent = plan.filter((p) => p.category !== 'invest')
-                                 .reduce((s, p) => s + p.spendAmt, 0);
+        const totalSpend = plan.reduce((s, p) => s + p.spendAmt, 0);
+        const totalInvest = plan
+          .filter((p) => p.category === "invest")
+          .reduce((s, p) => s + p.spendAmt, 0);
+        const totalPermanent = plan
+          .filter((p) => p.category !== "invest")
+          .reduce((s, p) => s + p.spendAmt, 0);
 
-      const planRows = plan.map((p) => {
-        const catMap   = { invest: 'type-invest', insure: 'type-insure', donate: 'type-donate' };
-        const catLabel = { invest: 'ลงทุน', insure: 'ประกัน', donate: 'บริจาค' };
-        return `
+        const planRows = plan
+          .map((p) => {
+            const catMap = {
+              invest: "type-invest",
+              insure: "type-insure",
+              donate: "type-donate",
+            };
+            const catLabel = {
+              invest: "ลงทุน",
+              insure: "ประกัน",
+              donate: "บริจาค",
+            };
+            return `
           <tr>
             <td>${p.type}</td>
             <td class="amt">${fmtNumber(p.deductionAmt)}</td>
@@ -545,14 +765,16 @@ function renderResults(summary) {
             <td><span class="plan-type-badge ${catMap[p.category]}">${catLabel[p.category]}</span></td>
             <td class="plan-note">${p.note}</td>
           </tr>`;
-      }).join('');
+          })
+          .join("");
 
-      const achievableClass = achievable ? 'achievable' : 'not-achievable';
-      const savingBadge     = achievable
-        ? `ประหยัดภาษีได้ ${fmtBaht(taxSaving)}`
-        : `ขาดลดหย่อน ${fmtBaht(remainingShortfall)}`;
+        const achievableClass = achievable ? "achievable" : "not-achievable";
+        const savingBadge = achievable
+          ? `ประหยัดภาษีได้ ${fmtBaht(taxSaving)}`
+          : `ขาดลดหย่อน ${fmtBaht(remainingShortfall)}`;
 
-      const bodyHTML = achievable ? `
+        const bodyHTML = achievable
+          ? `
         <div class="target-card-body">
           <p class="plan-intro">
             ลดหย่อนเพิ่มอีก <strong>${fmtBaht(neededDeduction)}</strong>
@@ -590,14 +812,17 @@ function renderResults(summary) {
               <span class="ci-value green">${fmtBaht(taxSaving)}</span>
             </div>
           </div>
-        </div>` : `
+        </div>`
+          : `
         <div class="target-card-body">
           <p class="not-achievable-note">
             ⚠️ ช่องทางลดหย่อนที่เหลือรวมกัน (<strong>${fmtBaht(neededDeduction - remainingShortfall)}</strong>)
             ยังไม่เพียงพอ — ต้องการ <strong>${fmtBaht(neededDeduction)}</strong>
             แต่ขาดอีก <strong>${fmtBaht(remainingShortfall)}</strong>
           </p>
-          ${plan.length > 0 ? `
+          ${
+            plan.length > 0
+              ? `
           <p class="plan-intro">แผนที่ทำได้บางส่วน:</p>
           <table class="plan-table">
             <thead>
@@ -607,14 +832,16 @@ function renderResults(summary) {
               </tr>
             </thead>
             <tbody>${planRows}</tbody>
-          </table>` : ''}
+          </table>`
+              : ""
+          }
         </div>`;
 
-      return `
+        return `
         <div class="target-card ${achievableClass}" id="target-${idx}">
           <div class="target-card-header" onclick="toggleTarget('target-${idx}')">
             <span class="target-bracket-label">
-              ${achievable ? '✅' : '❌'} ลดเป็นขั้นบันได <strong>${target.label}</strong>
+              ${achievable ? "✅" : "❌"} ลดเป็นขั้นบันได <strong>${target.label}</strong>
               &nbsp;— เงินได้สุทธิ ≤ ${fmtBaht(targetTaxableIncome)}
             </span>
             <span class="target-savings-badge">${savingBadge}</span>
@@ -622,7 +849,8 @@ function renderResults(summary) {
           </div>
           ${bodyHTML}
         </div>`;
-    }).join('');
+      })
+      .join("");
 
     targetsHTML = `
       <div class="targets-section">
@@ -643,7 +871,7 @@ function renderResults(summary) {
 function toggleTarget(id) {
   const card = document.getElementById(id);
   if (!card) return;
-  card.classList.toggle('expanded');
+  card.classList.toggle("expanded");
 }
 
 /** Read a numeric input value (default to 0 if empty/invalid) */
@@ -663,13 +891,13 @@ function numVal(id) {
 function showError(msgId, text, afterEl) {
   let el = document.getElementById(msgId);
   if (!el) {
-    el = document.createElement('div');
+    el = document.createElement("div");
     el.id = msgId;
-    el.className = 'error-msg';
-    (afterEl || document.getElementById('annual-income').parentNode).after(el);
+    el.className = "error-msg";
+    (afterEl || document.getElementById("annual-income").parentNode).after(el);
   }
   el.textContent = text;
-  el.classList.add('show');
+  el.classList.add("show");
 }
 
 /** Validate that a capped numeric input doesn't exceed maxVal; show/clear error inline.
@@ -683,18 +911,22 @@ function validateMax(inputId, maxVal) {
   const v = parseFloat(input.value);
   const msgId = `${inputId}-error`;
   if (!isNaN(v) && v > maxVal) {
-    showError(msgId, `กรอกได้สูงสุด ${fmtNumber(maxVal)} บาท`, input.parentNode);
-    input.classList.add('input-error');
+    showError(
+      msgId,
+      `กรอกได้สูงสุด ${fmtNumber(maxVal)} บาท`,
+      input.parentNode,
+    );
+    input.classList.add("input-error");
     return false;
   }
   clearError(msgId);
-  input.classList.remove('input-error');
+  input.classList.remove("input-error");
   return true;
 }
 
 function clearError(msgId) {
   const el = document.getElementById(msgId);
-  if (el) el.classList.remove('show');
+  if (el) el.classList.remove("show");
 }
 
 /** Update step indicator */
@@ -702,50 +934,165 @@ function setStep(n) {
   [1, 2, 3].forEach((i) => {
     const ind = document.getElementById(`ind-${i}`);
     const line = ind ? ind.nextElementSibling : null;
-    ind.classList.remove('active', 'done');
-    const circle = ind.querySelector('.step-circle');
-    const span   = circle ? circle.querySelector('span') : circle;
+    ind.classList.remove("active", "done");
+    const circle = ind.querySelector(".step-circle");
+    const span = circle ? circle.querySelector("span") : circle;
     if (i < n) {
-      ind.classList.add('done');
-      if (span) span.textContent = '✓';
-      if (line && line.classList.contains('step-line')) line.classList.add('done');
+      ind.classList.add("done");
+      if (span) span.textContent = "✓";
+      if (line && line.classList.contains("step-line"))
+        line.classList.add("done");
     } else if (i === n) {
-      ind.classList.add('active');
-      if (span) span.textContent = String(i).padStart(2, '0');
-      if (line && line.classList.contains('step-line')) line.classList.remove('done');
+      ind.classList.add("active");
+      if (span) span.textContent = String(i).padStart(2, "0");
+      if (line && line.classList.contains("step-line"))
+        line.classList.remove("done");
     } else {
-      if (span) span.textContent = String(i).padStart(2, '0');
-      if (line && line.classList.contains('step-line')) line.classList.remove('done');
+      if (span) span.textContent = String(i).padStart(2, "0");
+      if (line && line.classList.contains("step-line"))
+        line.classList.remove("done");
     }
-    document.getElementById(`step${i}`).classList.toggle('hidden', i !== n);
+    document.getElementById(`step${i}`).classList.toggle("hidden", i !== n);
   });
 }
 
 /** Update the expense deduction hint under the income input */
 function updateExpenseHint() {
-  const income = parseFloat(document.getElementById('annual-income').value) || 0;
-  const type   = document.getElementById('income-type').value;
-  const exp    = calcExpenseDeduction(income, type);
-  const hint   = document.getElementById('expense-deduction-hint');
+  const income =
+    parseFloat(document.getElementById("annual-income").value) || 0;
+  const type = document.getElementById("income-type").value;
+  const exp = calcExpenseDeduction(income, type);
+  const hint = document.getElementById("expense-deduction-hint");
   if (income > 0) {
     hint.textContent = `ค่าใช้จ่ายที่หักได้อัตโนมัติ: ${fmtBaht(exp)}`;
   } else {
-    hint.textContent = '';
+    hint.textContent = "";
   }
+}
+
+/* ─── Priority list helpers ─────────────────────────────── */
+
+const GRIP_SVG = `<svg width="12" height="14" viewBox="0 0 12 14" fill="none" aria-hidden="true">
+  <circle cx="3.5" cy="2"  r="1.5" fill="currentColor"/>
+  <circle cx="8.5" cy="2"  r="1.5" fill="currentColor"/>
+  <circle cx="3.5" cy="7"  r="1.5" fill="currentColor"/>
+  <circle cx="8.5" cy="7"  r="1.5" fill="currentColor"/>
+  <circle cx="3.5" cy="12" r="1.5" fill="currentColor"/>
+  <circle cx="8.5" cy="12" r="1.5" fill="currentColor"/>
+</svg>`;
+
+/** Drag-and-drop source id (module-level to survive re-renders) */
+let dragSourceId = null;
+
+/** Render the priority list into #priority-list and bind interaction events */
+function renderPriorityList() {
+  const list = document.getElementById("priority-list");
+  if (!list) return;
+
+  const catLabel = { invest: "ลงทุน", insure: "ประกัน", donate: "บริจาค" };
+  const catClass = {
+    invest: "type-invest",
+    insure: "type-insure",
+    donate: "type-donate",
+  };
+  const last = currentPriorityOrder.length - 1;
+
+  // Build a lookup map for O(1) access by id
+  const itemsById = new Map(PRIORITY_ITEMS.map((p) => [p.id, p]));
+
+  list.innerHTML = currentPriorityOrder
+    .map((id, idx) => {
+      const item = itemsById.get(id);
+      if (!item) return "";
+      return `
+      <li class="priority-item" draggable="true" data-id="${id}">
+        <span class="priority-drag-handle" aria-hidden="true">${GRIP_SVG}</span>
+        <span class="priority-rank">${idx + 1}</span>
+        <span class="priority-label">${item.label}</span>
+        <span class="plan-type-badge ${catClass[item.category]}">${catLabel[item.category]}</span>
+        <div class="priority-arrows">
+          <button type="button" class="priority-arrow-btn" data-dir="up"
+            aria-label="เลื่อนขึ้น" ${idx === 0 ? "disabled" : ""}>▲</button>
+          <button type="button" class="priority-arrow-btn" data-dir="down"
+            aria-label="เลื่อนลง" ${idx === last ? "disabled" : ""}>▼</button>
+        </div>
+      </li>`;
+    })
+    .join("");
+
+  /* ── Up / Down buttons ── */
+  list.querySelectorAll(".priority-arrow-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const li = btn.closest(".priority-item");
+      const id = li.dataset.id;
+      const idx = currentPriorityOrder.indexOf(id);
+      const dir = btn.dataset.dir;
+      if (dir === "up" && idx > 0) {
+        [currentPriorityOrder[idx - 1], currentPriorityOrder[idx]] = [
+          currentPriorityOrder[idx],
+          currentPriorityOrder[idx - 1],
+        ];
+        renderPriorityList();
+      } else if (dir === "down" && idx < currentPriorityOrder.length - 1) {
+        [currentPriorityOrder[idx], currentPriorityOrder[idx + 1]] = [
+          currentPriorityOrder[idx + 1],
+          currentPriorityOrder[idx],
+        ];
+        renderPriorityList();
+      }
+    });
+  });
+
+  /* ── Drag-and-drop ── */
+  list.querySelectorAll('.priority-item[draggable="true"]').forEach((item) => {
+    item.addEventListener("dragstart", (e) => {
+      dragSourceId = item.dataset.id;
+      item.classList.add("dragging");
+      e.dataTransfer.effectAllowed = "move";
+    });
+
+    item.addEventListener("dragend", () => {
+      item.classList.remove("dragging");
+      list
+        .querySelectorAll(".priority-item")
+        .forEach((i) => i.classList.remove("drag-over"));
+      dragSourceId = null;
+    });
+
+    item.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = "move";
+      list
+        .querySelectorAll(".priority-item")
+        .forEach((i) => i.classList.remove("drag-over"));
+      if (item.dataset.id !== dragSourceId) item.classList.add("drag-over");
+    });
+
+    item.addEventListener("drop", (e) => {
+      e.preventDefault();
+      const targetId = item.dataset.id;
+      if (dragSourceId && targetId !== dragSourceId) {
+        const srcIdx = currentPriorityOrder.indexOf(dragSourceId);
+        const dstIdx = currentPriorityOrder.indexOf(targetId);
+        currentPriorityOrder.splice(srcIdx, 1);
+        currentPriorityOrder.splice(dstIdx, 0, dragSourceId);
+        renderPriorityList();
+      }
+    });
+  });
 }
 
 /* ─────────────────────────────────────────────
    9. EVENT HANDLERS
    ───────────────────────────────────────────── */
 
-document.addEventListener('DOMContentLoaded', () => {
-
+document.addEventListener("DOMContentLoaded", () => {
   /* ── Number steppers ── */
-  document.querySelectorAll('.stepper-btn').forEach((btn) => {
-    btn.addEventListener('click', () => {
+  document.querySelectorAll(".stepper-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
       const targetId = btn.dataset.target;
-      const delta    = parseInt(btn.dataset.delta, 10);
-      const input    = document.getElementById(targetId);
+      const delta = parseInt(btn.dataset.delta, 10);
+      const input = document.getElementById(targetId);
       if (!input) return;
       const min = parseInt(input.min, 10) || 0;
       const max = parseInt(input.max, 10) || 999;
@@ -755,74 +1102,77 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   /* ── Accordion toggles ── */
-  document.querySelectorAll('.accordion-toggle').forEach((btn) => {
-    btn.addEventListener('click', () => {
+  document.querySelectorAll(".accordion-toggle").forEach((btn) => {
+    btn.addEventListener("click", () => {
       const body = btn.nextElementSibling;
-      const isOpen = body.classList.contains('open');
-      body.classList.toggle('open', !isOpen);
-      btn.classList.toggle('open', !isOpen);
+      const isOpen = body.classList.contains("open");
+      body.classList.toggle("open", !isOpen);
+      btn.classList.toggle("open", !isOpen);
     });
     // Open first accordion by default
   });
   // Open all accordions by default on step 2
-  document.querySelectorAll('.accordion-body').forEach((b) => {
-    b.classList.add('open');
+  document.querySelectorAll(".accordion-body").forEach((b) => {
+    b.classList.add("open");
   });
-  document.querySelectorAll('.accordion-toggle').forEach((b) => {
-    b.classList.add('open');
+  document.querySelectorAll(".accordion-toggle").forEach((b) => {
+    b.classList.add("open");
   });
 
+  /* ── Priority list initialisation ── */
+  renderPriorityList();
+
   /* ── Salary Calculator Popup ── */
-  const salaryCalcBtn   = document.getElementById('salary-calc-btn');
-  const salaryCalcPopup = document.getElementById('salary-calc-popup');
-  const salaryCalcClose = document.getElementById('salary-calc-close');
-  const scMonthly       = document.getElementById('sc-monthly');
-  const scMonths        = document.getElementById('sc-months');
-  const scBonus         = document.getElementById('sc-bonus');
-  const scResult        = document.getElementById('sc-result');
-  const scUseBtn        = document.getElementById('sc-use-btn');
+  const salaryCalcBtn = document.getElementById("salary-calc-btn");
+  const salaryCalcPopup = document.getElementById("salary-calc-popup");
+  const salaryCalcClose = document.getElementById("salary-calc-close");
+  const scMonthly = document.getElementById("sc-monthly");
+  const scMonths = document.getElementById("sc-months");
+  const scBonus = document.getElementById("sc-bonus");
+  const scResult = document.getElementById("sc-result");
+  const scUseBtn = document.getElementById("sc-use-btn");
 
   function updateSalaryCalcResult() {
     const monthly = parseFloat(scMonthly.value) || 0;
-    const months  = parseInt(scMonths.value, 10) || 12;
-    const bonus   = parseFloat(scBonus.value) || 0;
-    const total   = monthly * months + bonus;
+    const months = parseInt(scMonths.value, 10) || 12;
+    const bonus = parseFloat(scBonus.value) || 0;
+    const total = monthly * months + bonus;
     scResult.textContent = FMT.format(Math.round(total));
     scUseBtn.dataset.value = total;
   }
 
-  salaryCalcBtn.addEventListener('click', () => {
-    const opening = salaryCalcPopup.classList.contains('hidden');
-    salaryCalcPopup.classList.toggle('hidden');
+  salaryCalcBtn.addEventListener("click", () => {
+    const opening = salaryCalcPopup.classList.contains("hidden");
+    salaryCalcPopup.classList.toggle("hidden");
     if (opening) scMonthly.focus();
   });
 
-  salaryCalcClose.addEventListener('click', () => {
-    salaryCalcPopup.classList.add('hidden');
+  salaryCalcClose.addEventListener("click", () => {
+    salaryCalcPopup.classList.add("hidden");
   });
 
   [scMonthly, scMonths, scBonus].forEach((el) => {
-    el.addEventListener('input', updateSalaryCalcResult);
+    el.addEventListener("input", updateSalaryCalcResult);
   });
 
-  scUseBtn.addEventListener('click', () => {
+  scUseBtn.addEventListener("click", () => {
     const total = parseFloat(scUseBtn.dataset.value) || 0;
     if (total > 0) {
-      document.getElementById('annual-income').value = total;
+      document.getElementById("annual-income").value = total;
       updateExpenseHint();
-      clearError('income-error');
+      clearError("income-error");
     }
-    salaryCalcPopup.classList.add('hidden');
+    salaryCalcPopup.classList.add("hidden");
   });
 
-  document.addEventListener('click', (e) => {
+  document.addEventListener("click", (e) => {
     if (
-      !salaryCalcPopup.classList.contains('hidden') &&
+      !salaryCalcPopup.classList.contains("hidden") &&
       !salaryCalcPopup.contains(e.target) &&
       e.target !== salaryCalcBtn &&
       !salaryCalcBtn.contains(e.target)
     ) {
-      salaryCalcPopup.classList.add('hidden');
+      salaryCalcPopup.classList.add("hidden");
     }
   });
 
@@ -830,74 +1180,79 @@ document.addEventListener('DOMContentLoaded', () => {
   updateSalaryCalcResult();
 
   /* ── Income hint ── */
-  document.getElementById('annual-income').addEventListener('input', updateExpenseHint);
-  document.getElementById('income-type').addEventListener('change', updateExpenseHint);
+  document
+    .getElementById("annual-income")
+    .addEventListener("input", updateExpenseHint);
+  document
+    .getElementById("income-type")
+    .addEventListener("change", updateExpenseHint);
 
   /* ── Capped-field inline validation ── */
   const CAPPED_FIELDS = [
-    { id: 'social-security',    max: SS_MAX },
-    { id: 'life-insurance',     max: LIFE_INS_MAX },
-    { id: 'health-insurance',   max: HEALTH_INS_MAX },
-    { id: 'parents-health-ins', max: PARENTS_HEALTH_MAX },
-    { id: 'mortgage-interest',  max: MORTGAGE_MAX },
-    { id: 'existing-ssf',       max: SSF_MAX },
-    { id: 'existing-rmf',       max: RMF_MAX },
-    { id: 'existing-esg',       max: ESG_MAX },
+    { id: "social-security", max: SS_MAX },
+    { id: "life-insurance", max: LIFE_INS_MAX },
+    { id: "health-insurance", max: HEALTH_INS_MAX },
+    { id: "parents-health-ins", max: PARENTS_HEALTH_MAX },
+    { id: "mortgage-interest", max: MORTGAGE_MAX },
+    { id: "existing-ssf", max: SSF_MAX },
+    { id: "existing-rmf", max: RMF_MAX },
+    { id: "existing-esg", max: ESG_MAX },
   ];
   CAPPED_FIELDS.forEach(({ id, max }) => {
     const input = document.getElementById(id);
-    if (input) input.addEventListener('input', () => validateMax(id, max));
+    if (input) input.addEventListener("input", () => validateMax(id, max));
   });
 
   /* ── Step 1 → Step 2 ── */
-  document.getElementById('step1-next').addEventListener('click', () => {
-    const income = parseFloat(document.getElementById('annual-income').value);
+  document.getElementById("step1-next").addEventListener("click", () => {
+    const income = parseFloat(document.getElementById("annual-income").value);
     if (!income || income <= 0) {
-      showError('income-error', 'กรุณากรอกรายได้ที่ถูกต้อง (มากกว่า 0)');
+      showError("income-error", "กรุณากรอกรายได้ที่ถูกต้อง (มากกว่า 0)");
       return;
     }
-    clearError('income-error');
+    clearError("income-error");
     setStep(2);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo({ top: 0, behavior: "smooth" });
   });
 
   /* ── Step 2 → Step 1 ── */
-  document.getElementById('step2-back').addEventListener('click', () => {
+  document.getElementById("step2-back").addEventListener("click", () => {
     setStep(1);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo({ top: 0, behavior: "smooth" });
   });
 
   /* ── Step 2 → Step 3 (Calculate) ── */
-  document.getElementById('step2-calc').addEventListener('click', () => {
-    const income     = parseFloat(document.getElementById('annual-income').value) || 0;
-    const incomeType = document.getElementById('income-type').value;
+  document.getElementById("step2-calc").addEventListener("click", () => {
+    const income =
+      parseFloat(document.getElementById("annual-income").value) || 0;
+    const incomeType = document.getElementById("income-type").value;
 
     const deductions = {
-      hasSpouse:        document.getElementById('has-spouse').checked,
-      numChildren:      numVal('num-children'),
-      numParents:       numVal('num-parents'),
-      numDisabled:      numVal('num-disabled'),
-      socialSecurity:   numVal('social-security'),
-      lifeInsurance:    numVal('life-insurance'),
-      healthInsurance:  numVal('health-insurance'),
-      parentsHealthIns: numVal('parents-health-ins'),
-      ssf:              numVal('existing-ssf'),
-      rmf:              numVal('existing-rmf'),
-      esg:              numVal('existing-esg'),
-      pvf:              numVal('existing-pvf'),
-      mortgageInterest: numVal('mortgage-interest'),
+      hasSpouse: document.getElementById("has-spouse").checked,
+      numChildren: numVal("num-children"),
+      numParents: numVal("num-parents"),
+      numDisabled: numVal("num-disabled"),
+      socialSecurity: numVal("social-security"),
+      lifeInsurance: numVal("life-insurance"),
+      healthInsurance: numVal("health-insurance"),
+      parentsHealthIns: numVal("parents-health-ins"),
+      ssf: numVal("existing-ssf"),
+      rmf: numVal("existing-rmf"),
+      esg: numVal("existing-esg"),
+      pvf: numVal("existing-pvf"),
+      mortgageInterest: numVal("mortgage-interest"),
     };
 
     const summary = buildDeductionSummary(income, incomeType, deductions);
-    renderResults(summary);
+    renderResults(summary, [...currentPriorityOrder]);
     setStep(3);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo({ top: 0, behavior: "smooth" });
   });
 
   /* ── Step 3 → Step 2 ── */
-  document.getElementById('step3-back').addEventListener('click', () => {
+  document.getElementById("step3-back").addEventListener("click", () => {
     setStep(2);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo({ top: 0, behavior: "smooth" });
   });
 
   /* Initialize on step 1 */
