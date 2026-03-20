@@ -1,5 +1,5 @@
 /* =============================================================
-   Thai Tax Planner — js/tax.js
+  PlanTax — js/tax.js
    Thai personal income tax calculator & deduction optimizer
    Tax year 2568 (2025)
    ============================================================= */
