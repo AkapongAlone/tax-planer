@@ -744,6 +744,7 @@ function renderResults(summary, priorityOrder) {
         const totalPermanent = plan
           .filter((p) => p.category !== "invest")
           .reduce((s, p) => s + p.spendAmt, 0);
+        const netRealSaving = taxSaving - totalPermanent;
 
         const planRows = plan
           .map((p) => {
@@ -810,6 +811,10 @@ function renderResults(summary, priorityOrder) {
             <div class="cost-item">
               <span class="ci-label">ประหยัดภาษีสุทธิ</span>
               <span class="ci-value green">${fmtBaht(taxSaving)}</span>
+            </div>
+            <div class="cost-item">
+              <span class="ci-label">ประหยัดได้จริง (หักจ่ายถาวร)</span>
+              <span class="ci-value ${netRealSaving >= 0 ? "green" : "red"}">${fmtBaht(netRealSaving)}</span>
             </div>
           </div>
         </div>`
