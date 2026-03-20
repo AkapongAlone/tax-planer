@@ -85,7 +85,19 @@
       </div>
 
       <div class="form-group">
-        <label for="annual-income">รายได้รวมทั้งปี</label>
+        <div class="label-with-btn">
+          <label for="annual-income">รายได้รวมทั้งปี</label>
+          <button type="button" class="calc-trigger-btn" id="salary-calc-btn" aria-label="เครื่องคำนวณรายได้จากเงินเดือน">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <rect x="3" y="3" width="18" height="18" rx="3" stroke="currentColor" stroke-width="1.75"/>
+              <rect x="7" y="7" width="4" height="3" rx="1" fill="currentColor"/>
+              <rect x="13" y="7" width="4" height="3" rx="1" fill="currentColor"/>
+              <rect x="7" y="13" width="4" height="4" rx="1" fill="currentColor"/>
+              <rect x="13" y="13" width="4" height="4" rx="1" fill="currentColor"/>
+            </svg>
+            <span>คำนวณจากเงินเดือน</span>
+          </button>
+        </div>
         <div class="input-with-unit">
           <input
             type="number"
@@ -96,6 +108,56 @@
           />
           <span class="unit">บาท / ปี</span>
         </div>
+
+        <!-- ── Salary Calculator Popup ── -->
+        <div class="salary-calc-popup hidden" id="salary-calc-popup" role="dialog" aria-label="เครื่องคำนวณรายได้จากเงินเดือน">
+          <div class="salary-calc-header">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <rect x="3" y="3" width="18" height="18" rx="3" stroke="currentColor" stroke-width="1.75"/>
+              <rect x="7" y="7" width="4" height="3" rx="1" fill="currentColor"/>
+              <rect x="13" y="7" width="4" height="3" rx="1" fill="currentColor"/>
+              <rect x="7" y="13" width="4" height="4" rx="1" fill="currentColor"/>
+              <rect x="13" y="13" width="4" height="4" rx="1" fill="currentColor"/>
+            </svg>
+            <span>คำนวณรายได้จากเงินเดือน</span>
+            <button type="button" class="salary-calc-close" id="salary-calc-close" aria-label="ปิด">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M1 1l12 12M13 1L1 13" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/></svg>
+            </button>
+          </div>
+          <div class="salary-calc-body">
+            <div class="salary-calc-row">
+              <label class="salary-calc-label" for="sc-monthly">เงินเดือน / เดือน</label>
+              <div class="salary-calc-input-wrap">
+                <input type="number" id="sc-monthly" class="salary-calc-input" placeholder="0" min="0" />
+                <span class="salary-calc-unit">บาท</span>
+              </div>
+            </div>
+            <div class="salary-calc-row">
+              <label class="salary-calc-label" for="sc-months">จำนวนเดือน</label>
+              <div class="salary-calc-input-wrap">
+                <input type="number" id="sc-months" class="salary-calc-input" value="12" min="1" max="12" />
+                <span class="salary-calc-unit">เดือน</span>
+              </div>
+            </div>
+            <div class="salary-calc-row">
+              <label class="salary-calc-label" for="sc-bonus">โบนัส / รายได้อื่น</label>
+              <div class="salary-calc-input-wrap">
+                <input type="number" id="sc-bonus" class="salary-calc-input" placeholder="0" min="0" />
+                <span class="salary-calc-unit">บาท</span>
+              </div>
+            </div>
+            <div class="salary-calc-result-box">
+              <span class="salary-calc-result-label">รายได้รวมทั้งปี</span>
+              <span class="salary-calc-result-value" id="sc-result">0</span>
+              <span class="salary-calc-result-unit">บาท / ปี</span>
+            </div>
+            <button type="button" class="btn btn-primary salary-calc-use-btn" id="sc-use-btn">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2 8h12M8 2l6 6-6 6" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              <span>ใช้ค่านี้</span>
+            </button>
+          </div>
+        </div>
+
         <div class="hint" id="expense-deduction-hint"></div>
       </div>
 

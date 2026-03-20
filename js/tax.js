@@ -87,6 +87,19 @@ function getMarginalBracket(taxableIncome) {
 }
 
 /**
+ * Return the amount of taxable income that falls within a bracket.
+ * @param {number} taxableIncome
+ * @param {object} bracket  A TAX_BRACKETS entry
+ * @param {number} prevMax  Upper bound of the preceding bracket (0 for the first)
+ * @returns {number}
+ */
+function incomeInBracket(taxableIncome, bracket, prevMax) {
+  if (taxableIncome < bracket.min) return 0;
+  const top = bracket.max === Infinity ? taxableIncome : Math.min(taxableIncome, bracket.max);
+  return Math.max(0, top - prevMax);
+}
+
+/**
  * Calculate expense deduction based on income type.
  * @param {number} income
  * @param {'salary'|'freelance'} incomeType
@@ -426,6 +439,60 @@ function renderResults(summary, priorityOrder) {
       </div>`;
   }).join('');
 
+  // ── Detailed bracket table ──────────────────────────────
+  const marginalBracketIndex = TAX_BRACKETS.indexOf(summary.marginalBracket);
+
+  // Pre-compute cumulative max tax per bracket
+  const cumulativeMaxTaxes = TAX_BRACKETS.reduce((acc, b, idx) => {
+    const prevMax        = idx === 0 ? 0 : TAX_BRACKETS[idx - 1].max;
+    const ceiling        = b.max === Infinity ? null : (b.max - prevMax);
+    const maxTax         = b.rate === 0 ? 0 : (ceiling === null ? null : Math.round(ceiling * b.rate));
+    const prev           = idx === 0 ? 0 : (acc[idx - 1] ?? 0);
+    acc.push(b.max === Infinity ? null : prev + (maxTax ?? 0));
+    return acc;
+  }, []);
+
+  const bracketTableRows = TAX_BRACKETS.map((b, idx) => {
+    const prevMax          = idx === 0 ? 0 : TAX_BRACKETS[idx - 1].max;
+    const bracketCeiling   = b.max === Infinity ? null : (b.max - prevMax);
+    const maxTaxInBracket  = b.rate === 0 ? 0
+      : (bracketCeiling === null ? null : Math.round(bracketCeiling * b.rate));
+    const cumulativeMaxTax = cumulativeMaxTaxes[idx];
+
+    const userInBracket    = incomeInBracket(summary.taxableIncome, b, prevMax);
+    const userTaxInBracket = Math.round(userInBracket * b.rate);
+    const isCurrent        = idx === marginalBracketIndex;
+
+    const rangeLabel    = b.max === Infinity
+      ? `${fmtNumber(b.min)} ขึ้นไป`
+      : `${fmtNumber(b.min)} – ${fmtNumber(b.max)}`;
+    const ceilingLabel  = bracketCeiling !== null ? fmtNumber(bracketCeiling) : 'ไม่จำกัด';
+    const rateLabel     = b.rate === 0 ? 'ยกเว้น' : b.label;
+    const maxTaxLabel   = maxTaxInBracket === null ? 'ไม่จำกัด' : fmtNumber(maxTaxInBracket);
+    const cumMaxLabel   = cumulativeMaxTax === null ? 'ไม่จำกัด' : fmtNumber(cumulativeMaxTax);
+    const userInLabel   = userInBracket > 0 ? fmtNumber(userInBracket) : '–';
+    const userTaxLabel  = userInBracket > 0
+      ? (userTaxInBracket > 0 ? fmtNumber(userTaxInBracket) : '0')
+      : '–';
+
+    return `
+      <tr class="${isCurrent ? 'bdt-current' : ''}">
+        <td class="bdt-num">${idx + 1}</td>
+        <td>${rangeLabel}</td>
+        <td class="bdt-num-col">${ceilingLabel}</td>
+        <td class="bdt-rate ${isCurrent ? 'bdt-rate-current' : ''}">${rateLabel}</td>
+        <td class="bdt-num-col">${maxTaxLabel}</td>
+        <td class="bdt-num-col">${cumMaxLabel}</td>
+        <td class="bdt-num-col bdt-user">${userInLabel}</td>
+        <td class="bdt-num-col bdt-user">${userTaxLabel}</td>
+      </tr>`;
+  }).join('');
+
+  // User position summary
+  const prevMaxForMarginal = marginalBracketIndex === 0 ? 0 : TAX_BRACKETS[marginalBracketIndex - 1].max;
+  const userInMarginalBracket = incomeInBracket(
+    summary.taxableIncome, summary.marginalBracket, prevMaxForMarginal);
+
   const ladderHTML = `
     <div class="bracket-section">
       <p class="section-title">ขั้นบันไดภาษี</p>
@@ -436,6 +503,31 @@ function renderResults(summary, priorityOrder) {
         อัตราปัจจุบัน: <strong>${summary.marginalBracket.label}</strong> &nbsp;|&nbsp;
         ภาษีรวม: <strong>${fmtBaht(summary.currentTax)}</strong>
       </p>
+      <p class="section-title" style="margin-top:1.5rem">อัตราภาษีขั้นบันได</p>
+      <div class="bdt-scroll">
+        <table class="bracket-detail-table">
+          <thead>
+            <tr>
+              <th>ขั้น</th>
+              <th>ขั้นเงินได้สุทธิ (บาท)</th>
+              <th>เพดานของแต่ละขั้น</th>
+              <th>อัตราภาษี</th>
+              <th>ภาษีสูงสุดของขั้น</th>
+              <th>ภาษีสะสมสูงสุดของขั้น</th>
+              <th>รายได้ของคุณในขั้นนี้</th>
+              <th>ภาษีที่คุณจ่ายในขั้นนี้</th>
+            </tr>
+          </thead>
+          <tbody>${bracketTableRows}</tbody>
+        </table>
+      </div>
+      <div class="current-bracket-info">
+        <span class="cbi-pin">📍</span>
+        <span>คุณอยู่ใน<strong>ขั้นที่ ${marginalBracketIndex + 1}</strong>
+        (อัตรา <strong>${summary.marginalBracket.label}</strong>)
+        &nbsp;·&nbsp;
+        เงินได้สุทธิที่นำมาคำนวณในขั้นนี้ <strong class="cbi-amount">${fmtBaht(userInMarginalBracket)}</strong></span>
+      </div>
     </div>`;
 
   // ── Target bracket recommendations ────────────────────
@@ -587,17 +679,42 @@ function numVal(id) {
   return isNaN(v) || v < 0 ? 0 : v;
 }
 
-/** Show an error message below an input */
-function showError(msgId, text) {
+/** Show an error message below an input.
+ * @param {string} msgId   - ID for the error element
+ * @param {string} text    - Error message text
+ * @param {Element} [afterEl] - Element after which to insert the error div.
+ *                             Defaults to the parent of #annual-income.
+ */
+function showError(msgId, text, afterEl) {
   let el = document.getElementById(msgId);
   if (!el) {
     el = document.createElement('div');
     el.id = msgId;
     el.className = 'error-msg';
-    document.getElementById('annual-income').parentNode.after(el);
+    (afterEl || document.getElementById('annual-income').parentNode).after(el);
   }
   el.textContent = text;
   el.classList.add('show');
+}
+
+/** Validate that a capped numeric input doesn't exceed maxVal; show/clear error inline.
+ * @param {string} inputId - ID of the input element
+ * @param {number} maxVal  - Maximum allowed value
+ * @returns {boolean} true if value is valid
+ */
+function validateMax(inputId, maxVal) {
+  const input = document.getElementById(inputId);
+  if (!input) return true;
+  const v = parseFloat(input.value);
+  const msgId = `${inputId}-error`;
+  if (!isNaN(v) && v > maxVal) {
+    showError(msgId, `กรอกได้สูงสุด ${fmtNumber(maxVal)} บาท`, input.parentNode);
+    input.classList.add('input-error');
+    return false;
+  }
+  clearError(msgId);
+  input.classList.remove('input-error');
+  return true;
 }
 
 function clearError(msgId) {
@@ -781,9 +898,82 @@ document.addEventListener('DOMContentLoaded', () => {
   /* ── Priority list initialisation ── */
   renderPriorityList();
 
+  /* ── Salary Calculator Popup ── */
+  const salaryCalcBtn   = document.getElementById('salary-calc-btn');
+  const salaryCalcPopup = document.getElementById('salary-calc-popup');
+  const salaryCalcClose = document.getElementById('salary-calc-close');
+  const scMonthly       = document.getElementById('sc-monthly');
+  const scMonths        = document.getElementById('sc-months');
+  const scBonus         = document.getElementById('sc-bonus');
+  const scResult        = document.getElementById('sc-result');
+  const scUseBtn        = document.getElementById('sc-use-btn');
+
+  function updateSalaryCalcResult() {
+    const monthly = parseFloat(scMonthly.value) || 0;
+    const months  = parseInt(scMonths.value, 10) || 12;
+    const bonus   = parseFloat(scBonus.value) || 0;
+    const total   = monthly * months + bonus;
+    scResult.textContent = FMT.format(Math.round(total));
+    scUseBtn.dataset.value = total;
+  }
+
+  salaryCalcBtn.addEventListener('click', () => {
+    const opening = salaryCalcPopup.classList.contains('hidden');
+    salaryCalcPopup.classList.toggle('hidden');
+    if (opening) scMonthly.focus();
+  });
+
+  salaryCalcClose.addEventListener('click', () => {
+    salaryCalcPopup.classList.add('hidden');
+  });
+
+  [scMonthly, scMonths, scBonus].forEach((el) => {
+    el.addEventListener('input', updateSalaryCalcResult);
+  });
+
+  scUseBtn.addEventListener('click', () => {
+    const total = parseFloat(scUseBtn.dataset.value) || 0;
+    if (total > 0) {
+      document.getElementById('annual-income').value = total;
+      updateExpenseHint();
+      clearError('income-error');
+    }
+    salaryCalcPopup.classList.add('hidden');
+  });
+
+  document.addEventListener('click', (e) => {
+    if (
+      !salaryCalcPopup.classList.contains('hidden') &&
+      !salaryCalcPopup.contains(e.target) &&
+      e.target !== salaryCalcBtn &&
+      !salaryCalcBtn.contains(e.target)
+    ) {
+      salaryCalcPopup.classList.add('hidden');
+    }
+  });
+
+  /* Initialize salary calc result */
+  updateSalaryCalcResult();
+
   /* ── Income hint ── */
   document.getElementById('annual-income').addEventListener('input', updateExpenseHint);
   document.getElementById('income-type').addEventListener('change', updateExpenseHint);
+
+  /* ── Capped-field inline validation ── */
+  const CAPPED_FIELDS = [
+    { id: 'social-security',    max: SS_MAX },
+    { id: 'life-insurance',     max: LIFE_INS_MAX },
+    { id: 'health-insurance',   max: HEALTH_INS_MAX },
+    { id: 'parents-health-ins', max: PARENTS_HEALTH_MAX },
+    { id: 'mortgage-interest',  max: MORTGAGE_MAX },
+    { id: 'existing-ssf',       max: SSF_MAX },
+    { id: 'existing-rmf',       max: RMF_MAX },
+    { id: 'existing-esg',       max: ESG_MAX },
+  ];
+  CAPPED_FIELDS.forEach(({ id, max }) => {
+    const input = document.getElementById(id);
+    if (input) input.addEventListener('input', () => validateMax(id, max));
+  });
 
   /* ── Step 1 → Step 2 ── */
   document.getElementById('step1-next').addEventListener('click', () => {
