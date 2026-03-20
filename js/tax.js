@@ -37,30 +37,39 @@ const DONATION_CAP_PCT = 0.1; // 10% of net income
 
 /** Ordered list of plannable deduction categories (default priority top → bottom) */
 const PRIORITY_ITEMS = [
-  { id: "ssf", label: "SSF — กองทุนรวมเพื่อการออม", category: "invest" },
-  { id: "rmf", label: "RMF — กองทุนรวมเพื่อการเลี้ยงชีพ", category: "invest" },
+  { id: "ssf", label: "SSF — กองทุนรวมเพื่อการออม", shortLabel: "SSF", category: "invest" },
+  { id: "rmf", label: "RMF — กองทุนรวมเพื่อการเลี้ยงชีพ", shortLabel: "RMF", category: "invest" },
   {
     id: "esg",
     label: "Thai ESG — กองทุนรวมไทยเพื่อความยั่งยืน",
+    shortLabel: "ESG",
     category: "invest",
   },
   {
     id: "eduDon",
     label: "บริจาคเพื่อการศึกษา / กีฬา / สาธารณสุข (2×)",
+    shortLabel: "บริจาคศึกษา (2×)",
     category: "donate",
   },
   {
     id: "lifeIns",
     label: "ประกันชีวิต / เงินฝากสะสมทรัพย์",
+    shortLabel: "ประกันชีวิต",
     category: "insure",
   },
-  { id: "healthIns", label: "ประกันสุขภาพ", category: "insure" },
-  { id: "parentHlth", label: "ประกันสุขภาพบิดา/มารดา", category: "insure" },
-  { id: "regDon", label: "เงินบริจาคทั่วไป", category: "donate" },
+  { id: "healthIns", label: "ประกันสุขภาพ", shortLabel: "ประกันสุขภาพ", category: "insure" },
+  { id: "parentHlth", label: "ประกันสุขภาพบิดา/มารดา", shortLabel: "ปกส.บิดา/มารดา", category: "insure" },
+  { id: "regDon", label: "เงินบริจาคทั่วไป", shortLabel: "บริจาคทั่วไป", category: "donate" },
 ];
+
+/** Lookup maps built from PRIORITY_ITEMS */
+const ITEM_BY_ID = new Map(PRIORITY_ITEMS.map((p) => [p.id, p]));
 
 /** Current user-selected priority order (array of PRIORITY_ITEMS ids) */
 let currentPriorityOrder = PRIORITY_ITEMS.map((p) => p.id);
+
+/** Cached permutations of priority IDs (computed once on first use) */
+let cachedPermutations = null;
 
 /* ─────────────────────────────────────────────
    2. TAX CALCULATION
@@ -300,9 +309,9 @@ function calcAvailableCapacity(income, summary) {
    ───────────────────────────────────────────── */
 
 /**
- * Generate all permutations of an array.
+ * Generate all permutations of an array (recursive, returns full list).
  * @param {Array} arr
- * @returns {Array[]} array of permutations
+ * @returns {Array[]} array of all permutations
  */
 function getPermutations(arr) {
   if (arr.length <= 1) return [arr];
@@ -314,6 +323,18 @@ function getPermutations(arr) {
     }
   }
   return result;
+}
+
+/**
+ * Return cached permutations of all PRIORITY_ITEMS ids.
+ * Computed once on first call and reused thereafter.
+ * @returns {Array[]}
+ */
+function getAllPriorityPermutations() {
+  if (!cachedPermutations) {
+    cachedPermutations = getPermutations(PRIORITY_ITEMS.map((p) => p.id));
+  }
+  return cachedPermutations;
 }
 
 /**
@@ -331,7 +352,7 @@ function getPermutations(arr) {
  *             achievable: boolean, remainingShortfall: number }}
  */
 function findBestPlan(neededDeduction, cap, marginalRate, taxSaving) {
-  const allPerms = getPermutations(PRIORITY_ITEMS.map((p) => p.id));
+  const allPerms = getAllPriorityPermutations();
 
   let bestNetSaving = -Infinity;
   let bestResult = null;
@@ -372,10 +393,11 @@ function buildOptimalPlan(neededDeduction, cap, marginalRate, priorityOrder) {
   const plan = [];
   let rem = neededDeduction;
 
-  function addStep(type, category, deductionAmt, spendAmt, note) {
+  function addStep(id, type, category, deductionAmt, spendAmt, note) {
     if (deductionAmt <= 0) return;
     const taxSaved = Math.round(deductionAmt * marginalRate);
     plan.push({
+      id,
       type,
       category,
       deductionAmt: Math.round(deductionAmt),
@@ -393,6 +415,7 @@ function buildOptimalPlan(neededDeduction, cap, marginalRate, priorityOrder) {
         if (cap.availSSF > 0) {
           const use = Math.min(rem, cap.availSSF);
           addStep(
+            "ssf",
             "SSF",
             "invest",
             use,
@@ -406,6 +429,7 @@ function buildOptimalPlan(neededDeduction, cap, marginalRate, priorityOrder) {
         if (cap.availRMF > 0) {
           const use = Math.min(rem, cap.availRMF);
           addStep(
+            "rmf",
             "RMF",
             "invest",
             use,
@@ -419,6 +443,7 @@ function buildOptimalPlan(neededDeduction, cap, marginalRate, priorityOrder) {
         if (cap.availESG > 0) {
           const use = Math.min(rem, cap.availESG);
           addStep(
+            "esg",
             "Thai ESG",
             "invest",
             use,
@@ -433,6 +458,7 @@ function buildOptimalPlan(neededDeduction, cap, marginalRate, priorityOrder) {
           const usableDeduction = Math.min(rem, cap.eduDonCap);
           // Education/sport/health donations get a 2× deduction: pay half, deduct full amount
           addStep(
+            "eduDon",
             "บริจาคเพื่อการศึกษา / กีฬา / สาธารณสุข",
             "donate",
             usableDeduction,
@@ -446,6 +472,7 @@ function buildOptimalPlan(neededDeduction, cap, marginalRate, priorityOrder) {
         if (cap.availLifeIns > 0) {
           const use = Math.min(rem, cap.availLifeIns);
           addStep(
+            "lifeIns",
             "ประกันชีวิต / เงินฝากสะสมทรัพย์",
             "insure",
             use,
@@ -459,6 +486,7 @@ function buildOptimalPlan(neededDeduction, cap, marginalRate, priorityOrder) {
         if (cap.availHealthIns > 0) {
           const use = Math.min(rem, cap.availHealthIns);
           addStep(
+            "healthIns",
             "ประกันสุขภาพ",
             "insure",
             use,
@@ -472,6 +500,7 @@ function buildOptimalPlan(neededDeduction, cap, marginalRate, priorityOrder) {
         if (cap.availParentsHealth > 0) {
           const use = Math.min(rem, cap.availParentsHealth);
           addStep(
+            "parentHlth",
             "ประกันสุขภาพบิดา/มารดา",
             "insure",
             use,
@@ -485,6 +514,7 @@ function buildOptimalPlan(neededDeduction, cap, marginalRate, priorityOrder) {
         if (cap.regDonCap > 0) {
           const use = Math.min(rem, cap.regDonCap);
           addStep(
+            "regDon",
             "เงินบริจาคทั่วไป",
             "donate",
             use,
@@ -770,18 +800,6 @@ function renderResults(summary, priorityOrder, optimize) {
     (b) => b.rate < marginalRate && b.max !== Infinity,
   );
 
-  // Build a label lookup for showing optimized order
-  const itemLabelById = new Map(PRIORITY_ITEMS.map((p) => [p.id, p.label]));
-  const itemShortLabelById = new Map(PRIORITY_ITEMS.map((p) => {
-    const short = p.id === "eduDon" ? "บริจาคศึกษา (2×)"
-      : p.id === "regDon" ? "บริจาคทั่วไป"
-      : p.id === "parentHlth" ? "ปกส.บิดา/มารดา"
-      : p.id === "lifeIns" ? "ประกันชีวิต"
-      : p.id === "healthIns" ? "ประกันสุขภาพ"
-      : p.id.toUpperCase();
-    return [p.id, short];
-  }));
-
   let targetsHTML = "";
   if (lowerBrackets.length === 0) {
     targetsHTML = `<div class="zero-tax-msg">
@@ -854,14 +872,11 @@ function renderResults(summary, priorityOrder, optimize) {
         // Show optimized order summary when optimize is on
         const orderChips = optimize
           ? usedOrder
-              .filter((id) => plan.some((p) => {
-                const match = { ssf: "SSF", rmf: "RMF", esg: "Thai ESG",
-                  eduDon: "บริจาคเพื่อการศึกษา / กีฬา / สาธารณสุข", lifeIns: "ประกันชีวิต / เงินฝากสะสมทรัพย์",
-                  healthIns: "ประกันสุขภาพ", parentHlth: "ประกันสุขภาพบิดา/มารดา", regDon: "เงินบริจาคทั่วไป" };
-                return p.type === match[id];
-              }))
-              .map((id, i) =>
-                `<span class="optimize-order-chip"><span class="chip-num">${i + 1}</span>${itemShortLabelById.get(id)}</span>`)
+              .filter((id) => plan.some((p) => p.id === id))
+              .map((id, i) => {
+                const item = ITEM_BY_ID.get(id);
+                return `<span class="optimize-order-chip"><span class="chip-num">${i + 1}</span>${item.shortLabel}</span>`;
+              })
               .join("")
           : "";
 
