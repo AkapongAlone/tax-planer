@@ -35,6 +35,21 @@ const PARENTS_HEALTH_MAX      = 15_000;
 const MORTGAGE_MAX            = 100_000;
 const DONATION_CAP_PCT        = 0.10;    // 10% of net income
 
+/** Ordered list of plannable deduction categories (default priority top → bottom) */
+const PRIORITY_ITEMS = [
+  { id: 'ssf',        label: 'SSF — กองทุนรวมเพื่อการออม',                    category: 'invest' },
+  { id: 'rmf',        label: 'RMF — กองทุนรวมเพื่อการเลี้ยงชีพ',              category: 'invest' },
+  { id: 'esg',        label: 'Thai ESG — กองทุนรวมไทยเพื่อความยั่งยืน',        category: 'invest' },
+  { id: 'eduDon',     label: 'บริจาคเพื่อการศึกษา / กีฬา / สาธารณสุข (2×)',  category: 'donate' },
+  { id: 'lifeIns',    label: 'ประกันชีวิต / เงินฝากสะสมทรัพย์',               category: 'insure' },
+  { id: 'healthIns',  label: 'ประกันสุขภาพ',                                   category: 'insure' },
+  { id: 'parentHlth', label: 'ประกันสุขภาพบิดา/มารดา',                         category: 'insure' },
+  { id: 'regDon',     label: 'เงินบริจาคทั่วไป',                               category: 'donate' },
+];
+
+/** Current user-selected priority order (array of PRIORITY_ITEMS ids) */
+let currentPriorityOrder = PRIORITY_ITEMS.map((p) => p.id);
+
 /* ─────────────────────────────────────────────
    2. TAX CALCULATION
    ───────────────────────────────────────────── */
@@ -200,24 +215,15 @@ function calcAvailableCapacity(income, summary) {
 
 /**
  * Build a recommendation plan to achieve `neededDeduction` of additional deduction
- * with minimum permanent cash outflow.
+ * with minimum permanent cash outflow, respecting the user-defined priority order.
  *
- * Priority:
- *   1. SSF  (investment – money returned after lock-up)
- *   2. RMF  (investment – money returned at retirement)
- *   3. Thai ESG (investment – money returned)
- *   4. Education donation (2× deduction, spend half, permanent)
- *   5. Life insurance (spend = deduction, but get coverage)
- *   6. Health insurance
- *   7. Parents' health insurance
- *   8. Regular donation (1× deduction, permanent)
- *
- * @param {number} neededDeduction  Additional taxable income reduction required
- * @param {object} cap              Output of calcAvailableCapacity
- * @param {number} marginalRate     Current marginal tax rate (decimal)
+ * @param {number}   neededDeduction  Additional taxable income reduction required
+ * @param {object}   cap              Output of calcAvailableCapacity
+ * @param {number}   marginalRate     Current marginal tax rate (decimal)
+ * @param {string[]} priorityOrder    Ordered array of PRIORITY_ITEMS ids (first = highest priority)
  * @returns {{ plan: Array, achievable: boolean, remainingShortfall: number }}
  */
-function buildOptimalPlan(neededDeduction, cap, marginalRate) {
+function buildOptimalPlan(neededDeduction, cap, marginalRate, priorityOrder) {
   const plan = [];
   let rem = neededDeduction;
 
@@ -229,54 +235,72 @@ function buildOptimalPlan(neededDeduction, cap, marginalRate) {
     rem -= deductionAmt;
   }
 
-  // 1. SSF
-  if (rem > 0 && cap.availSSF > 0) {
-    const use = Math.min(rem, cap.availSSF);
-    addStep('SSF', 'invest', use, use, 'ลงทุน – ได้คืนเมื่อถอน (ถือครอง 10 ปี)');
-  }
-
-  // 2. RMF
-  if (rem > 0 && cap.availRMF > 0) {
-    const use = Math.min(rem, cap.availRMF);
-    addStep('RMF', 'invest', use, use, 'ลงทุน – ได้คืนเมื่ออายุ 55 ปี (ถือครอง 5 ปี)');
-  }
-
-  // 3. Thai ESG
-  if (rem > 0 && cap.availESG > 0) {
-    const use = Math.min(rem, cap.availESG);
-    addStep('Thai ESG', 'invest', use, use, 'ลงทุน – ได้คืนหลังถือครอง 5 ปี');
-  }
-
-  // 4. Education donation (2× deduction → spend only half)
-  if (rem > 0 && cap.eduDonCap > 0) {
-    const usableDeduction = Math.min(rem, cap.eduDonCap);
-    const spend = Math.ceil(usableDeduction / 2);  // donate half, get 2× deduction
-    addStep('บริจาคเพื่อการศึกษา / กีฬา / สาธารณสุข', 'donate',
-      usableDeduction, spend, 'ลดหย่อนได้ 2 เท่าของเงินบริจาค (สูงสุด 10% ของเงินได้สุทธิ)');
-  }
-
-  // 5. Life insurance (remaining capacity)
-  if (rem > 0 && cap.availLifeIns > 0) {
-    const use = Math.min(rem, cap.availLifeIns);
-    addStep('ประกันชีวิต / เงินฝากสะสมทรัพย์', 'insure', use, use, 'ได้รับความคุ้มครองชีวิต');
-  }
-
-  // 6. Health insurance
-  if (rem > 0 && cap.availHealthIns > 0) {
-    const use = Math.min(rem, cap.availHealthIns);
-    addStep('ประกันสุขภาพ', 'insure', use, use, 'ได้รับความคุ้มครองสุขภาพ');
-  }
-
-  // 7. Parents' health insurance
-  if (rem > 0 && cap.availParentsHealth > 0) {
-    const use = Math.min(rem, cap.availParentsHealth);
-    addStep('ประกันสุขภาพบิดา/มารดา', 'insure', use, use, 'ได้รับความคุ้มครองสุขภาพบิดามารดา');
-  }
-
-  // 8. Regular donation (cap same as edu donation – shared 10% limit here simplified)
-  if (rem > 0 && cap.regDonCap > 0) {
-    const use = Math.min(rem, cap.regDonCap);
-    addStep('เงินบริจาคทั่วไป', 'donate', use, use, 'บริจาคเพื่อสาธารณประโยชน์ (สูงสุด 10% ของเงินได้สุทธิ)');
+  for (const id of priorityOrder) {
+    if (rem <= 0) break;
+    switch (id) {
+      case 'ssf': {
+        if (cap.availSSF > 0) {
+          const use = Math.min(rem, cap.availSSF);
+          addStep('SSF', 'invest', use, use, 'ลงทุน – ได้คืนเมื่อถอน (ถือครอง 10 ปี)');
+        }
+        break;
+      }
+      case 'rmf': {
+        if (cap.availRMF > 0) {
+          const use = Math.min(rem, cap.availRMF);
+          addStep('RMF', 'invest', use, use, 'ลงทุน – ได้คืนเมื่ออายุ 55 ปี (ถือครอง 5 ปี)');
+        }
+        break;
+      }
+      case 'esg': {
+        if (cap.availESG > 0) {
+          const use = Math.min(rem, cap.availESG);
+          addStep('Thai ESG', 'invest', use, use, 'ลงทุน – ได้คืนหลังถือครอง 5 ปี');
+        }
+        break;
+      }
+      case 'eduDon': {
+        if (cap.eduDonCap > 0) {
+          const usableDeduction = Math.min(rem, cap.eduDonCap);
+          // Education/sport/health donations get a 2× deduction: pay half, deduct full amount
+          addStep('บริจาคเพื่อการศึกษา / กีฬา / สาธารณสุข', 'donate',
+            usableDeduction, Math.ceil(usableDeduction / 2),
+            'ลดหย่อนได้ 2 เท่าของเงินบริจาค (สูงสุด 10% ของเงินได้สุทธิ)');
+        }
+        break;
+      }
+      case 'lifeIns': {
+        if (cap.availLifeIns > 0) {
+          const use = Math.min(rem, cap.availLifeIns);
+          addStep('ประกันชีวิต / เงินฝากสะสมทรัพย์', 'insure', use, use, 'ได้รับความคุ้มครองชีวิต');
+        }
+        break;
+      }
+      case 'healthIns': {
+        if (cap.availHealthIns > 0) {
+          const use = Math.min(rem, cap.availHealthIns);
+          addStep('ประกันสุขภาพ', 'insure', use, use, 'ได้รับความคุ้มครองสุขภาพ');
+        }
+        break;
+      }
+      case 'parentHlth': {
+        if (cap.availParentsHealth > 0) {
+          const use = Math.min(rem, cap.availParentsHealth);
+          addStep('ประกันสุขภาพบิดา/มารดา', 'insure', use, use, 'ได้รับความคุ้มครองสุขภาพบิดามารดา');
+        }
+        break;
+      }
+      case 'regDon': {
+        if (cap.regDonCap > 0) {
+          const use = Math.min(rem, cap.regDonCap);
+          addStep('เงินบริจาคทั่วไป', 'donate', use, use,
+            'บริจาคเพื่อสาธารณประโยชน์ (สูงสุด 10% ของเงินได้สุทธิ)');
+        }
+        break;
+      }
+      default:
+        break;
+    }
   }
 
   return { plan, achievable: rem <= 0, remainingShortfall: Math.max(0, Math.round(rem)) };
@@ -297,9 +321,10 @@ const fmtPct    = (n) => n.toFixed(2) + '%';
 
 /**
  * Build and inject the results HTML into #results-container.
- * @param {object} summary  from buildDeductionSummary
+ * @param {object}   summary       from buildDeductionSummary
+ * @param {string[]} priorityOrder ordered array of PRIORITY_ITEMS ids
  */
-function renderResults(summary) {
+function renderResults(summary, priorityOrder) {
   const container = document.getElementById('results-container');
   const cap = calcAvailableCapacity(summary.income, summary);
   const marginalRate = summary.marginalBracket.rate;
@@ -434,7 +459,7 @@ function renderResults(summary) {
       const targetTax   = calcTax(targetTaxableIncome);
       const taxSaving   = summary.currentTax - targetTax;
       const { plan, achievable, remainingShortfall } =
-        buildOptimalPlan(neededDeduction, cap, marginalRate);
+        buildOptimalPlan(neededDeduction, cap, marginalRate, priorityOrder);
 
       const totalSpend     = plan.reduce((s, p) => s + p.spendAmt, 0);
       const totalInvest    = plan.filter((p) => p.category === 'invest')
@@ -617,6 +642,104 @@ function updateExpenseHint() {
   }
 }
 
+/* ─── Priority list helpers ─────────────────────────────── */
+
+const GRIP_SVG = `<svg width="12" height="14" viewBox="0 0 12 14" fill="none" aria-hidden="true">
+  <circle cx="3.5" cy="2"  r="1.5" fill="currentColor"/>
+  <circle cx="8.5" cy="2"  r="1.5" fill="currentColor"/>
+  <circle cx="3.5" cy="7"  r="1.5" fill="currentColor"/>
+  <circle cx="8.5" cy="7"  r="1.5" fill="currentColor"/>
+  <circle cx="3.5" cy="12" r="1.5" fill="currentColor"/>
+  <circle cx="8.5" cy="12" r="1.5" fill="currentColor"/>
+</svg>`;
+
+/** Drag-and-drop source id (module-level to survive re-renders) */
+let dragSourceId = null;
+
+/** Render the priority list into #priority-list and bind interaction events */
+function renderPriorityList() {
+  const list = document.getElementById('priority-list');
+  if (!list) return;
+
+  const catLabel = { invest: 'ลงทุน', insure: 'ประกัน', donate: 'บริจาค' };
+  const catClass = { invest: 'type-invest', insure: 'type-insure', donate: 'type-donate' };
+  const last = currentPriorityOrder.length - 1;
+
+  // Build a lookup map for O(1) access by id
+  const itemsById = new Map(PRIORITY_ITEMS.map((p) => [p.id, p]));
+
+  list.innerHTML = currentPriorityOrder.map((id, idx) => {
+    const item = itemsById.get(id);
+    if (!item) return '';
+    return `
+      <li class="priority-item" draggable="true" data-id="${id}">
+        <span class="priority-drag-handle" aria-hidden="true">${GRIP_SVG}</span>
+        <span class="priority-rank">${idx + 1}</span>
+        <span class="priority-label">${item.label}</span>
+        <span class="plan-type-badge ${catClass[item.category]}">${catLabel[item.category]}</span>
+        <div class="priority-arrows">
+          <button type="button" class="priority-arrow-btn" data-dir="up"
+            aria-label="เลื่อนขึ้น" ${idx === 0 ? 'disabled' : ''}>▲</button>
+          <button type="button" class="priority-arrow-btn" data-dir="down"
+            aria-label="เลื่อนลง" ${idx === last ? 'disabled' : ''}>▼</button>
+        </div>
+      </li>`;
+  }).join('');
+
+  /* ── Up / Down buttons ── */
+  list.querySelectorAll('.priority-arrow-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const li  = btn.closest('.priority-item');
+      const id  = li.dataset.id;
+      const idx = currentPriorityOrder.indexOf(id);
+      const dir = btn.dataset.dir;
+      if (dir === 'up' && idx > 0) {
+        [currentPriorityOrder[idx - 1], currentPriorityOrder[idx]] =
+          [currentPriorityOrder[idx], currentPriorityOrder[idx - 1]];
+        renderPriorityList();
+      } else if (dir === 'down' && idx < currentPriorityOrder.length - 1) {
+        [currentPriorityOrder[idx], currentPriorityOrder[idx + 1]] =
+          [currentPriorityOrder[idx + 1], currentPriorityOrder[idx]];
+        renderPriorityList();
+      }
+    });
+  });
+
+  /* ── Drag-and-drop ── */
+  list.querySelectorAll('.priority-item[draggable="true"]').forEach((item) => {
+    item.addEventListener('dragstart', (e) => {
+      dragSourceId = item.dataset.id;
+      item.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+    });
+
+    item.addEventListener('dragend', () => {
+      item.classList.remove('dragging');
+      list.querySelectorAll('.priority-item').forEach((i) => i.classList.remove('drag-over'));
+      dragSourceId = null;
+    });
+
+    item.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      list.querySelectorAll('.priority-item').forEach((i) => i.classList.remove('drag-over'));
+      if (item.dataset.id !== dragSourceId) item.classList.add('drag-over');
+    });
+
+    item.addEventListener('drop', (e) => {
+      e.preventDefault();
+      const targetId = item.dataset.id;
+      if (dragSourceId && targetId !== dragSourceId) {
+        const srcIdx = currentPriorityOrder.indexOf(dragSourceId);
+        const dstIdx = currentPriorityOrder.indexOf(targetId);
+        currentPriorityOrder.splice(srcIdx, 1);
+        currentPriorityOrder.splice(dstIdx, 0, dragSourceId);
+        renderPriorityList();
+      }
+    });
+  });
+}
+
 /* ─────────────────────────────────────────────
    9. EVENT HANDLERS
    ───────────────────────────────────────────── */
@@ -654,6 +777,9 @@ document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('.accordion-toggle').forEach((b) => {
     b.classList.add('open');
   });
+
+  /* ── Priority list initialisation ── */
+  renderPriorityList();
 
   /* ── Income hint ── */
   document.getElementById('annual-income').addEventListener('input', updateExpenseHint);
@@ -699,7 +825,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const summary = buildDeductionSummary(income, incomeType, deductions);
-    renderResults(summary);
+    renderResults(summary, [...currentPriorityOrder]);
     setStep(3);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   });
