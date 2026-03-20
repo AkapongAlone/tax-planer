@@ -880,6 +880,118 @@ input[type="number"] { -moz-appearance: textfield; }
 
 .bracket-summary-note strong { color: var(--gold); }
 
+/* Bracket detail table */
+.bdt-scroll {
+  overflow-x: auto;
+  margin-top: .5rem;
+  border-radius: var(--r);
+  border: 1px solid var(--border);
+}
+
+.bracket-detail-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: .82rem;
+  min-width: 680px;
+}
+
+.bracket-detail-table thead tr {
+  background: var(--surface-lt);
+}
+
+.bracket-detail-table th {
+  padding: .55rem .7rem;
+  text-align: center;
+  font-family: 'Kanit', sans-serif;
+  font-weight: 700;
+  font-size: .72rem;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+.bracket-detail-table th:nth-child(2) { text-align: left; }
+
+.bracket-detail-table td {
+  padding: .48rem .7rem;
+  border-bottom: 1px solid rgba(255,255,255,.04);
+  color: var(--text-muted);
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.bracket-detail-table td:nth-child(2) { text-align: left; }
+
+.bracket-detail-table tbody tr:last-child td { border-bottom: none; }
+
+.bracket-detail-table tbody tr:hover td {
+  background: rgba(255,255,255,.03);
+}
+
+/* Current bracket highlight */
+.bracket-detail-table tr.bdt-current td {
+  background: rgba(245,183,0,.07);
+  color: var(--text);
+}
+
+.bracket-detail-table tr.bdt-current td.bdt-rate-current {
+  color: var(--gold);
+  font-family: 'Kanit', sans-serif;
+  font-weight: 700;
+}
+
+.bracket-detail-table .bdt-num {
+  font-family: 'Kanit', sans-serif;
+  font-weight: 700;
+  color: var(--text-dim);
+  width: 36px;
+}
+
+.bracket-detail-table tr.bdt-current .bdt-num {
+  color: var(--gold);
+}
+
+.bracket-detail-table .bdt-num-col {
+  font-family: 'Kanit', sans-serif;
+}
+
+.bracket-detail-table .bdt-user {
+  color: var(--jade);
+}
+
+.bracket-detail-table tr.bdt-current .bdt-user {
+  color: var(--gold);
+  font-weight: 700;
+}
+
+/* Current bracket info banner */
+.current-bracket-info {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  margin-top: .85rem;
+  padding: .7rem 1rem;
+  background: rgba(245,183,0,.07);
+  border: 1px solid rgba(245,183,0,.2);
+  border-radius: var(--r);
+  font-size: .84rem;
+  color: var(--text-muted);
+  line-height: 1.6;
+}
+
+.current-bracket-info .cbi-pin {
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
+.current-bracket-info strong { color: var(--text); }
+
+.current-bracket-info .cbi-amount {
+  color: var(--gold);
+}
+
 /* Target recommendation cards */
 .targets-section { margin-top: 1rem; }
 
