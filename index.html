@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>วางแผนภาษีไทย 2568</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap"
+    rel="stylesheet"
+  />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <!-- ===== HEADER ===== -->
+  <header>
+    <div class="header-content">
+      <span class="header-icon">🧮</span>
+      <div>
+        <h1>วางแผนภาษีไทย</h1>
+        <p>คำนวณและวางแผนลดหย่อนภาษีเงินได้บุคคลธรรมดา ปีภาษี 2568</p>
+      </div>
+    </div>
+  </header>
+
+  <!-- ===== MAIN ===== -->
+  <main>
+    <!-- Step Indicator -->
+    <div class="steps-wrapper">
+      <div class="step-indicator">
+        <div class="step-item active" id="ind-1">
+          <div class="step-circle">1</div>
+          <div class="step-label">รายได้</div>
+        </div>
+        <div class="step-line"></div>
+        <div class="step-item" id="ind-2">
+          <div class="step-circle">2</div>
+          <div class="step-label">ค่าลดหย่อน</div>
+        </div>
+        <div class="step-line"></div>
+        <div class="step-item" id="ind-3">
+          <div class="step-circle">3</div>
+          <div class="step-label">ผลลัพธ์</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== STEP 1: INCOME ===== -->
+    <section id="step1" class="card step-content">
+      <h2 class="card-title">💰 รายได้ของคุณ</h2>
+      <p class="card-desc">กรอกรายได้ทั้งปีและประเภทรายได้เพื่อคำนวณค่าใช้จ่ายที่หักได้</p>
+
+      <div class="form-group">
+        <label for="income-type">ประเภทรายได้</label>
+        <select id="income-type">
+          <option value="salary">เงินเดือน / ค่าจ้าง (หักได้ 50% สูงสุด 100,000 บาท)</option>
+          <option value="freelance">อาชีพอิสระ / วิชาชีพ (หักได้ 60% สูงสุด 600,000 บาท)</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="annual-income">รายได้รวมทั้งปี (บาท)</label>
+        <div class="input-with-unit">
+          <input
+            type="number"
+            id="annual-income"
+            placeholder="เช่น 600000"
+            min="0"
+            step="1000"
+          />
+          <span class="unit">บาท/ปี</span>
+        </div>
+        <div class="hint" id="expense-deduction-hint"></div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-primary" id="step1-next">ถัดไป →</button>
+      </div>
+    </section>
+
+    <!-- ===== STEP 2: EXISTING DEDUCTIONS ===== -->
+    <section id="step2" class="card step-content hidden">
+      <h2 class="card-title">📋 ค่าลดหย่อนที่มีอยู่แล้ว</h2>
+      <p class="card-desc">
+        กรอกค่าลดหย่อนที่คุณมีอยู่แล้วในปีนี้ (หากไม่มีหรือไม่แน่ใจ ปล่อยเว้นว่างไว้ได้เลย)
+      </p>
+
+      <!-- Personal & Family -->
+      <div class="deduction-section">
+        <button class="accordion-toggle" type="button">
+          <span>👨‍👩‍👧‍👦 ค่าลดหย่อนส่วนตัวและครอบครัว</span>
+          <span class="acc-icon">▼</span>
+        </button>
+        <div class="accordion-body">
+          <div class="form-row">
+            <div class="form-group">
+              <label>
+                <input type="checkbox" id="has-spouse" />
+                มีคู่สมรสที่ไม่มีเงินได้ (ลดหย่อนได้ 60,000 บาท)
+              </label>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="num-children">จำนวนบุตร (คน) — ลดหย่อนได้ 30,000 บาท/คน</label>
+              <input type="number" id="num-children" min="0" max="20" value="0" />
+            </div>
+            <div class="form-group">
+              <label for="num-parents">จำนวนบิดา/มารดา ที่เลี้ยงดู (คน) — 30,000 บาท/คน</label>
+              <input type="number" id="num-parents" min="0" max="4" value="0" />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="num-disabled">จำนวนผู้พิการ/ทุพพลภาพที่ดูแล (คน) — 60,000 บาท/คน</label>
+              <input type="number" id="num-disabled" min="0" max="10" value="0" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Insurance -->
+      <div class="deduction-section">
+        <button class="accordion-toggle" type="button">
+          <span>🛡️ ประกัน</span>
+          <span class="acc-icon">▼</span>
+        </button>
+        <div class="accordion-body">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="social-security">
+                เงินประกันสังคม (สูงสุด 9,000 บาท)
+                <span class="badge">สูงสุด 9,000</span>
+              </label>
+              <div class="input-with-unit">
+                <input type="number" id="social-security" min="0" max="9000" placeholder="0" />
+                <span class="unit">บาท</span>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="life-insurance">
+                เบี้ยประกันชีวิต (สูงสุด 100,000 บาท)
+                <span class="badge">สูงสุด 100,000</span>
+              </label>
+              <div class="input-with-unit">
+                <input type="number" id="life-insurance" min="0" max="100000" placeholder="0" />
+                <span class="unit">บาท</span>
+              </div>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="health-insurance">
+                เบี้ยประกันสุขภาพ (สูงสุด 25,000 บาท รวมกับประกันชีวิตไม่เกิน 100,000 บาท)
+                <span class="badge">สูงสุด 25,000</span>
+              </label>
+              <div class="input-with-unit">
+                <input type="number" id="health-insurance" min="0" max="25000" placeholder="0" />
+                <span class="unit">บาท</span>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="parents-health-ins">
+                เบี้ยประกันสุขภาพบิดา/มารดา (สูงสุด 15,000 บาท)
+                <span class="badge">สูงสุด 15,000</span>
+              </label>
+              <div class="input-with-unit">
+                <input
+                  type="number"
+                  id="parents-health-ins"
+                  min="0"
+                  max="15000"
+                  placeholder="0"
+                />
+                <span class="unit">บาท</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Funds & Savings -->
+      <div class="deduction-section">
+        <button class="accordion-toggle" type="button">
+          <span>📈 กองทุนและการออม</span>
+          <span class="acc-icon">▼</span>
+        </button>
+        <div class="accordion-body">
+          <p class="hint">
+            รวมกัน SSF + RMF + Thai ESG + กองทุนสำรองเลี้ยงชีพ ต้องไม่เกิน 500,000 บาท
+          </p>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="existing-ssf">
+                SSF — กองทุนรวมเพื่อการออม (สูงสุด 30% ของเงินได้ หรือ 200,000 บาท)
+              </label>
+              <div class="input-with-unit">
+                <input type="number" id="existing-ssf" min="0" placeholder="0" />
+                <span class="unit">บาท</span>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="existing-rmf">
+                RMF — กองทุนรวมเพื่อการเลี้ยงชีพ (สูงสุด 30% ของเงินได้ หรือ 500,000 บาท)
+              </label>
+              <div class="input-with-unit">
+                <input type="number" id="existing-rmf" min="0" placeholder="0" />
+                <span class="unit">บาท</span>
+              </div>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="existing-esg">
+                Thai ESG — กองทุนรวมไทยเพื่อความยั่งยืน (สูงสุด 30% ของเงินได้ หรือ 300,000 บาท)
+              </label>
+              <div class="input-with-unit">
+                <input type="number" id="existing-esg" min="0" placeholder="0" />
+                <span class="unit">บาท</span>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="existing-pvf">
+                กองทุนสำรองเลี้ยงชีพ / กบข. (จ่ายจริงในปีนี้)
+              </label>
+              <div class="input-with-unit">
+                <input type="number" id="existing-pvf" min="0" placeholder="0" />
+                <span class="unit">บาท</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Other Deductions -->
+      <div class="deduction-section">
+        <button class="accordion-toggle" type="button">
+          <span>🏠 อื่น ๆ</span>
+          <span class="acc-icon">▼</span>
+        </button>
+        <div class="accordion-body">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="mortgage-interest">
+                ดอกเบี้ยกู้ซื้อบ้าน (สูงสุด 100,000 บาท)
+                <span class="badge">สูงสุด 100,000</span>
+              </label>
+              <div class="input-with-unit">
+                <input
+                  type="number"
+                  id="mortgage-interest"
+                  min="0"
+                  max="100000"
+                  placeholder="0"
+                />
+                <span class="unit">บาท</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-outline" id="step2-back">← ย้อนกลับ</button>
+        <button class="btn btn-primary" id="step2-calc">คำนวณภาษี 🔍</button>
+      </div>
+    </section>
+
+    <!-- ===== STEP 3: RESULTS ===== -->
+    <section id="step3" class="card step-content hidden">
+      <h2 class="card-title">📊 ผลการคำนวณและแผนภาษี</h2>
+      <div id="results-container"></div>
+      <div class="btn-row" style="margin-top: 1.5rem">
+        <button class="btn btn-outline" id="step3-back">← แก้ไขข้อมูล</button>
+      </div>
+    </section>
+  </main>
+
+  <!-- ===== FOOTER ===== -->
+  <footer>
+    <p>
+      ข้อมูลอ้างอิง: กรมสรรพากร ปีภาษี 2568 &nbsp;|&nbsp; แอปนี้ใช้สำหรับประกอบการวางแผนเบื้องต้น
+      ไม่ใช่คำแนะนำทางภาษีอย่างเป็นทางการ
+    </p>
+  </footer>
+
+  <script src="js/tax.js"></script>
+</body>
+</html>
