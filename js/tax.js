@@ -37,30 +37,39 @@ const DONATION_CAP_PCT = 0.1; // 10% of net income
 
 /** Ordered list of plannable deduction categories (default priority top → bottom) */
 const PRIORITY_ITEMS = [
-  { id: "ssf", label: "SSF — กองทุนรวมเพื่อการออม", category: "invest" },
-  { id: "rmf", label: "RMF — กองทุนรวมเพื่อการเลี้ยงชีพ", category: "invest" },
+  { id: "ssf", label: "SSF — กองทุนรวมเพื่อการออม", shortLabel: "SSF", category: "invest" },
+  { id: "rmf", label: "RMF — กองทุนรวมเพื่อการเลี้ยงชีพ", shortLabel: "RMF", category: "invest" },
   {
     id: "esg",
     label: "Thai ESG — กองทุนรวมไทยเพื่อความยั่งยืน",
+    shortLabel: "ESG",
     category: "invest",
   },
   {
     id: "eduDon",
     label: "บริจาคเพื่อการศึกษา / กีฬา / สาธารณสุข (2×)",
+    shortLabel: "บริจาคศึกษา (2×)",
     category: "donate",
   },
   {
     id: "lifeIns",
     label: "ประกันชีวิต / เงินฝากสะสมทรัพย์",
+    shortLabel: "ประกันชีวิต",
     category: "insure",
   },
-  { id: "healthIns", label: "ประกันสุขภาพ", category: "insure" },
-  { id: "parentHlth", label: "ประกันสุขภาพบิดา/มารดา", category: "insure" },
-  { id: "regDon", label: "เงินบริจาคทั่วไป", category: "donate" },
+  { id: "healthIns", label: "ประกันสุขภาพ", shortLabel: "ประกันสุขภาพ", category: "insure" },
+  { id: "parentHlth", label: "ประกันสุขภาพบิดา/มารดา", shortLabel: "ปกส.บิดา/มารดา", category: "insure" },
+  { id: "regDon", label: "เงินบริจาคทั่วไป", shortLabel: "บริจาคทั่วไป", category: "donate" },
 ];
+
+/** Lookup maps built from PRIORITY_ITEMS */
+const ITEM_BY_ID = new Map(PRIORITY_ITEMS.map((p) => [p.id, p]));
 
 /** Current user-selected priority order (array of PRIORITY_ITEMS ids) */
 let currentPriorityOrder = PRIORITY_ITEMS.map((p) => p.id);
+
+/** Cached permutations of priority IDs (computed once on first use) */
+let cachedPermutations = null;
 
 /* ─────────────────────────────────────────────
    2. TAX CALCULATION
@@ -300,6 +309,77 @@ function calcAvailableCapacity(income, summary) {
    ───────────────────────────────────────────── */
 
 /**
+ * Generate all permutations of an array (recursive, returns full list).
+ * @param {Array} arr
+ * @returns {Array[]} array of all permutations
+ */
+function getPermutations(arr) {
+  if (arr.length <= 1) return [arr];
+  const result = [];
+  for (let i = 0; i < arr.length; i++) {
+    const rest = arr.slice(0, i).concat(arr.slice(i + 1));
+    for (const perm of getPermutations(rest)) {
+      result.push([arr[i], ...perm]);
+    }
+  }
+  return result;
+}
+
+/**
+ * Return cached permutations of all PRIORITY_ITEMS ids.
+ * Computed once on first call and reused thereafter.
+ * @returns {Array[]}
+ */
+function getAllPriorityPermutations() {
+  if (!cachedPermutations) {
+    cachedPermutations = getPermutations(PRIORITY_ITEMS.map((p) => p.id));
+  }
+  return cachedPermutations;
+}
+
+/**
+ * Find the priority order that maximises netRealSaving for a given
+ * neededDeduction / target bracket.
+ *
+ * It tries every permutation of the priority items and picks the one
+ * that gives the highest netRealSaving (= taxSaving − totalSpend).
+ *
+ * @param {number}   neededDeduction  Additional deduction needed
+ * @param {object}   cap              Available capacity (from calcAvailableCapacity)
+ * @param {number}   marginalRate     Current marginal tax rate
+ * @param {number}   taxSaving        Tax saved by hitting the target bracket
+ * @returns {{ bestPlan: Array, bestOrder: string[], bestNetSaving: number,
+ *             achievable: boolean, remainingShortfall: number }}
+ */
+function findBestPlan(neededDeduction, cap, marginalRate, taxSaving) {
+  const allPerms = getAllPriorityPermutations();
+
+  let bestNetSaving = -Infinity;
+  let bestResult = null;
+  let bestOrder = null;
+
+  for (const perm of allPerms) {
+    const result = buildOptimalPlan(neededDeduction, cap, marginalRate, perm);
+    const totalSpend = result.plan.reduce((s, p) => s + p.spendAmt, 0);
+    const netSaving = taxSaving - totalSpend;
+
+    if (netSaving > bestNetSaving) {
+      bestNetSaving = netSaving;
+      bestResult = result;
+      bestOrder = perm;
+    }
+  }
+
+  return {
+    bestPlan: bestResult.plan,
+    bestOrder,
+    bestNetSaving,
+    achievable: bestResult.achievable,
+    remainingShortfall: bestResult.remainingShortfall,
+  };
+}
+
+/**
  * Build a recommendation plan to achieve `neededDeduction` of additional deduction
  * with minimum permanent cash outflow, respecting the user-defined priority order.
  *
@@ -313,10 +393,11 @@ function buildOptimalPlan(neededDeduction, cap, marginalRate, priorityOrder) {
   const plan = [];
   let rem = neededDeduction;
 
-  function addStep(type, category, deductionAmt, spendAmt, note) {
+  function addStep(id, type, category, deductionAmt, spendAmt, note) {
     if (deductionAmt <= 0) return;
     const taxSaved = Math.round(deductionAmt * marginalRate);
     plan.push({
+      id,
       type,
       category,
       deductionAmt: Math.round(deductionAmt),
@@ -334,6 +415,7 @@ function buildOptimalPlan(neededDeduction, cap, marginalRate, priorityOrder) {
         if (cap.availSSF > 0) {
           const use = Math.min(rem, cap.availSSF);
           addStep(
+            "ssf",
             "SSF",
             "invest",
             use,
@@ -347,6 +429,7 @@ function buildOptimalPlan(neededDeduction, cap, marginalRate, priorityOrder) {
         if (cap.availRMF > 0) {
           const use = Math.min(rem, cap.availRMF);
           addStep(
+            "rmf",
             "RMF",
             "invest",
             use,
@@ -360,6 +443,7 @@ function buildOptimalPlan(neededDeduction, cap, marginalRate, priorityOrder) {
         if (cap.availESG > 0) {
           const use = Math.min(rem, cap.availESG);
           addStep(
+            "esg",
             "Thai ESG",
             "invest",
             use,
@@ -374,6 +458,7 @@ function buildOptimalPlan(neededDeduction, cap, marginalRate, priorityOrder) {
           const usableDeduction = Math.min(rem, cap.eduDonCap);
           // Education/sport/health donations get a 2× deduction: pay half, deduct full amount
           addStep(
+            "eduDon",
             "บริจาคเพื่อการศึกษา / กีฬา / สาธารณสุข",
             "donate",
             usableDeduction,
@@ -387,6 +472,7 @@ function buildOptimalPlan(neededDeduction, cap, marginalRate, priorityOrder) {
         if (cap.availLifeIns > 0) {
           const use = Math.min(rem, cap.availLifeIns);
           addStep(
+            "lifeIns",
             "ประกันชีวิต / เงินฝากสะสมทรัพย์",
             "insure",
             use,
@@ -400,6 +486,7 @@ function buildOptimalPlan(neededDeduction, cap, marginalRate, priorityOrder) {
         if (cap.availHealthIns > 0) {
           const use = Math.min(rem, cap.availHealthIns);
           addStep(
+            "healthIns",
             "ประกันสุขภาพ",
             "insure",
             use,
@@ -413,6 +500,7 @@ function buildOptimalPlan(neededDeduction, cap, marginalRate, priorityOrder) {
         if (cap.availParentsHealth > 0) {
           const use = Math.min(rem, cap.availParentsHealth);
           addStep(
+            "parentHlth",
             "ประกันสุขภาพบิดา/มารดา",
             "insure",
             use,
@@ -426,6 +514,7 @@ function buildOptimalPlan(neededDeduction, cap, marginalRate, priorityOrder) {
         if (cap.regDonCap > 0) {
           const use = Math.min(rem, cap.regDonCap);
           addStep(
+            "regDon",
             "เงินบริจาคทั่วไป",
             "donate",
             use,
@@ -464,8 +553,9 @@ const fmtPct = (n) => n.toFixed(2) + "%";
  * Build and inject the results HTML into #results-container.
  * @param {object}   summary       from buildDeductionSummary
  * @param {string[]} priorityOrder ordered array of PRIORITY_ITEMS ids
+ * @param {boolean}  [optimize=false] when true, try all priority permutations per bracket
  */
-function renderResults(summary, priorityOrder) {
+function renderResults(summary, priorityOrder, optimize) {
   const container = document.getElementById("results-container");
   const cap = calcAvailableCapacity(summary.income, summary);
   const marginalRate = summary.marginalBracket.rate;
@@ -730,12 +820,22 @@ function renderResults(summary, priorityOrder) {
 
         const targetTax = calcTax(targetTaxableIncome);
         const taxSaving = summary.currentTax - targetTax;
-        const { plan, achievable, remainingShortfall } = buildOptimalPlan(
-          neededDeduction,
-          cap,
-          marginalRate,
-          priorityOrder,
-        );
+
+        // Choose plan based on optimize mode
+        let plan, achievable, remainingShortfall, usedOrder;
+        if (optimize) {
+          const best = findBestPlan(neededDeduction, cap, marginalRate, taxSaving);
+          plan = best.bestPlan;
+          achievable = best.achievable;
+          remainingShortfall = best.remainingShortfall;
+          usedOrder = best.bestOrder;
+        } else {
+          const result = buildOptimalPlan(neededDeduction, cap, marginalRate, priorityOrder);
+          plan = result.plan;
+          achievable = result.achievable;
+          remainingShortfall = result.remainingShortfall;
+          usedOrder = priorityOrder;
+        }
 
         const totalSpend = plan.reduce((s, p) => s + p.spendAmt, 0);
         const totalInvest = plan
@@ -769,6 +869,28 @@ function renderResults(summary, priorityOrder) {
           })
           .join("");
 
+        // Show optimized order summary when optimize is on
+        const orderChips = optimize
+          ? usedOrder
+              .filter((id) => plan.some((p) => p.id === id))
+              .map((id, i) => {
+                const item = ITEM_BY_ID.get(id);
+                return `<span class="optimize-order-chip"><span class="chip-num">${i + 1}</span>${item.shortLabel}</span>`;
+              })
+              .join("")
+          : "";
+
+        const optimizeOrderHTML = optimize && orderChips
+          ? `<div class="optimize-order-summary">
+               <div class="optimize-order-title">⚡ ลำดับที่ดีที่สุดสำหรับขั้นนี้</div>
+               <div class="optimize-order-list">${orderChips}</div>
+             </div>`
+          : "";
+
+        const optimizeBadgeHTML = optimize
+          ? `<span class="optimize-badge">⚡ Optimized</span>`
+          : "";
+
         const achievableClass = achievable ? "achievable" : "not-achievable";
         const savingBadge = achievable
           ? `ประหยัดได้จริง ${fmtBaht(netRealSaving)}`
@@ -782,6 +904,7 @@ function renderResults(summary, priorityOrder) {
             เพื่อให้เงินได้สุทธิ ≤ ${fmtBaht(targetTaxableIncome)}
             และประหยัดภาษีได้ <strong class="saving">${fmtBaht(taxSaving)}</strong>
           </p>
+          ${optimizeOrderHTML}
           <table class="plan-table">
             <thead>
               <tr>
@@ -825,6 +948,7 @@ function renderResults(summary, priorityOrder) {
             ยังไม่เพียงพอ — ต้องการ <strong>${fmtBaht(neededDeduction)}</strong>
             แต่ขาดอีก <strong>${fmtBaht(remainingShortfall)}</strong>
           </p>
+          ${optimizeOrderHTML}
           ${
             plan.length > 0
               ? `
@@ -848,6 +972,7 @@ function renderResults(summary, priorityOrder) {
             <span class="target-bracket-label">
               ${achievable ? "✅" : "❌"} ลดเป็นขั้นบันได <strong>${target.label}</strong>
               &nbsp;— เงินได้สุทธิ ≤ ${fmtBaht(targetTaxableIncome)}
+              ${optimizeBadgeHTML}
             </span>
             <span class="target-savings-badge" style="${achievable && netRealSaving < 0 ? "background:var(--red);color:#fff;" : ""}">${savingBadge}</span>
             <span class="target-toggle-icon">${chevronSVG}</span>
@@ -857,10 +982,14 @@ function renderResults(summary, priorityOrder) {
       })
       .join("");
 
+    const optimizeNote = optimize
+      ? `<p style="font-size:0.8rem;color:var(--gold);margin-top:0.2rem">⚡ โหมด Optimize: ระบบคำนวณทุก Scenario แล้วเลือกวิธีที่ประหยัดได้จริงมากที่สุดสำหรับแต่ละขั้น</p>`
+      : `<p>คลิกที่แต่ละเป้าหมายเพื่อดูรายละเอียดแผนที่ใช้เงินน้อยที่สุด</p>`;
+
     targetsHTML = `
       <div class="targets-section">
         <p class="section-title">แผนลดหย่อนเพื่อลดขั้นบันไดภาษี</p>
-        <p>คลิกที่แต่ละเป้าหมายเพื่อดูรายละเอียดแผนที่ใช้เงินน้อยที่สุด</p>
+        ${optimizeNote}
         ${cardItems}
       </div>`;
   }
@@ -1127,6 +1256,13 @@ document.addEventListener("DOMContentLoaded", () => {
   /* ── Priority list initialisation ── */
   renderPriorityList();
 
+  /* ── Optimize toggle ── */
+  const optimizeToggle = document.getElementById("optimize-toggle");
+  const priorityManualSection = document.getElementById("priority-manual-section");
+  optimizeToggle.addEventListener("change", () => {
+    priorityManualSection.classList.toggle("dimmed", optimizeToggle.checked);
+  });
+
   /* ── Salary Calculator Popup ── */
   const salaryCalcBtn = document.getElementById("salary-calc-btn");
   const salaryCalcPopup = document.getElementById("salary-calc-popup");
@@ -1249,7 +1385,8 @@ document.addEventListener("DOMContentLoaded", () => {
     };
 
     const summary = buildDeductionSummary(income, incomeType, deductions);
-    renderResults(summary, [...currentPriorityOrder]);
+    const optimize = document.getElementById("optimize-toggle").checked;
+    renderResults(summary, [...currentPriorityOrder], optimize);
     setStep(3);
     window.scrollTo({ top: 0, behavior: "smooth" });
   });
