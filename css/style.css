@@ -1508,6 +1508,165 @@ input[type="number"].input-error {
   cursor: default;
 }
 
+/* ── Optimize Toggle ─────────────────────────────────────── */
+.optimize-toggle-wrap {
+  margin-bottom: 0.75rem;
+  padding: 0.85rem 1rem;
+  background: linear-gradient(135deg, rgba(245, 183, 0, 0.06) 0%, rgba(16, 185, 129, 0.04) 100%);
+  border: 1px solid var(--border-gold);
+  border-radius: var(--r);
+}
+
+.optimize-toggle-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+.optimize-toggle-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.optimize-toggle-title {
+  font-family: "Kanit", sans-serif;
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--gold);
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.optimize-toggle-desc {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  line-height: 1.4;
+}
+
+/* Toggle switch track */
+.toggle-switch {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.toggle-switch input[type="checkbox"] {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.toggle-track {
+  display: block;
+  width: 46px;
+  height: 26px;
+  background: var(--surface-md);
+  border: 1px solid var(--border);
+  border-radius: 13px;
+  position: relative;
+  transition: background 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+.toggle-knob {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 18px;
+  height: 18px;
+  background: var(--text-dim);
+  border-radius: 50%;
+  transition: transform 0.25s ease, background 0.25s ease;
+}
+
+.toggle-switch input:checked ~ .toggle-track {
+  background: rgba(245, 183, 0, 0.2);
+  border-color: var(--gold);
+  box-shadow: 0 0 12px rgba(245, 183, 0, 0.15);
+}
+
+.toggle-switch input:checked ~ .toggle-track .toggle-knob {
+  transform: translateX(20px);
+  background: var(--gold);
+}
+
+/* Dim the priority list when optimize is active */
+#priority-manual-section.dimmed {
+  opacity: 0.35;
+  pointer-events: none;
+  filter: grayscale(0.6);
+  transition: opacity 0.3s ease, filter 0.3s ease;
+}
+
+#priority-manual-section {
+  transition: opacity 0.3s ease, filter 0.3s ease;
+}
+
+/* ── Optimize badge in results ───────────────────────────── */
+.optimize-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.2rem 0.6rem;
+  background: linear-gradient(135deg, rgba(245, 183, 0, 0.15), rgba(245, 183, 0, 0.08));
+  border: 1px solid var(--border-gold);
+  border-radius: 20px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--gold);
+  margin-left: 0.5rem;
+  vertical-align: middle;
+}
+
+.optimize-order-summary {
+  margin-top: 0.6rem;
+  padding: 0.6rem 0.8rem;
+  background: rgba(245, 183, 0, 0.04);
+  border: 1px solid rgba(245, 183, 0, 0.12);
+  border-radius: var(--r-sm);
+}
+
+.optimize-order-title {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--gold);
+  margin-bottom: 0.3rem;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.optimize-order-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
+.optimize-order-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.15rem 0.45rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-size: 0.68rem;
+  color: var(--text-muted);
+}
+
+.optimize-order-chip .chip-num {
+  font-family: "Kanit", sans-serif;
+  font-weight: 700;
+  font-size: 0.6rem;
+  color: var(--gold);
+  margin-right: 0.15rem;
+}
+
 /* ── Salary Calculator Popup ─────────────────────────────── */
 .label-with-btn {
   display: flex;

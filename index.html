@@ -885,15 +885,31 @@
             </svg>
           </button>
           <div class="accordion-body">
-            <p class="hint-block">
-              ลากหรือใช้ปุ่ม ▲▼ เพื่อเรียงลำดับ —
-              รายการบนสุดจะถูกนำมาใช้เติมโควต้าก่อนเมื่อคำนวณแผนลดหย่อน
-            </p>
-            <ul
-              class="priority-list"
-              id="priority-list"
-              aria-label="ลำดับความสำคัญในการลดหย่อน"
-            ></ul>
+            <!-- Optimize toggle -->
+            <div class="optimize-toggle-wrap">
+              <label class="optimize-toggle-label" for="optimize-toggle">
+                <div class="optimize-toggle-info">
+                  <span class="optimize-toggle-title">ให้ระบบหาลำดับที่ดีที่สุดอัตโนมัติ</span>
+                  <span class="optimize-toggle-desc">ระบบจะคำนวณทุก Scenario เพื่อหาวิธีที่ให้ประหยัดได้จริง (Net Real Saving) มากที่สุดในแต่ละขั้นบันได</span>
+                </div>
+                <div class="toggle-switch">
+                  <input type="checkbox" id="optimize-toggle" />
+                  <span class="toggle-track"><span class="toggle-knob"></span></span>
+                </div>
+              </label>
+            </div>
+
+            <div id="priority-manual-section">
+              <p class="hint-block">
+                ลากหรือใช้ปุ่ม ▲▼ เพื่อเรียงลำดับ —
+                รายการบนสุดจะถูกนำมาใช้เติมโควต้าก่อนเมื่อคำนวณแผนลดหย่อน
+              </p>
+              <ul
+                class="priority-list"
+                id="priority-list"
+                aria-label="ลำดับความสำคัญในการลดหย่อน"
+              ></ul>
+            </div>
           </div>
         </div>
 
