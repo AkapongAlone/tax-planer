@@ -654,17 +654,42 @@ function numVal(id) {
   return isNaN(v) || v < 0 ? 0 : v;
 }
 
-/** Show an error message below an input */
-function showError(msgId, text) {
+/** Show an error message below an input.
+ * @param {string} msgId   - ID for the error element
+ * @param {string} text    - Error message text
+ * @param {Element} [afterEl] - Element after which to insert the error div.
+ *                             Defaults to the parent of #annual-income.
+ */
+function showError(msgId, text, afterEl) {
   let el = document.getElementById(msgId);
   if (!el) {
     el = document.createElement('div');
     el.id = msgId;
     el.className = 'error-msg';
-    document.getElementById('annual-income').parentNode.after(el);
+    (afterEl || document.getElementById('annual-income').parentNode).after(el);
   }
   el.textContent = text;
   el.classList.add('show');
+}
+
+/** Validate that a capped numeric input doesn't exceed maxVal; show/clear error inline.
+ * @param {string} inputId - ID of the input element
+ * @param {number} maxVal  - Maximum allowed value
+ * @returns {boolean} true if value is valid
+ */
+function validateMax(inputId, maxVal) {
+  const input = document.getElementById(inputId);
+  if (!input) return true;
+  const v = parseFloat(input.value);
+  const msgId = `${inputId}-error`;
+  if (!isNaN(v) && v > maxVal) {
+    showError(msgId, `กรอกได้สูงสุด ${fmtNumber(maxVal)} บาท`, input.parentNode);
+    input.classList.add('input-error');
+    return false;
+  }
+  clearError(msgId);
+  input.classList.remove('input-error');
+  return true;
 }
 
 function clearError(msgId) {
@@ -747,9 +772,82 @@ document.addEventListener('DOMContentLoaded', () => {
     b.classList.add('open');
   });
 
+  /* ── Salary Calculator Popup ── */
+  const salaryCalcBtn   = document.getElementById('salary-calc-btn');
+  const salaryCalcPopup = document.getElementById('salary-calc-popup');
+  const salaryCalcClose = document.getElementById('salary-calc-close');
+  const scMonthly       = document.getElementById('sc-monthly');
+  const scMonths        = document.getElementById('sc-months');
+  const scBonus         = document.getElementById('sc-bonus');
+  const scResult        = document.getElementById('sc-result');
+  const scUseBtn        = document.getElementById('sc-use-btn');
+
+  function updateSalaryCalcResult() {
+    const monthly = parseFloat(scMonthly.value) || 0;
+    const months  = parseInt(scMonths.value, 10) || 12;
+    const bonus   = parseFloat(scBonus.value) || 0;
+    const total   = monthly * months + bonus;
+    scResult.textContent = FMT.format(Math.round(total));
+    scUseBtn.dataset.value = total;
+  }
+
+  salaryCalcBtn.addEventListener('click', () => {
+    const opening = salaryCalcPopup.classList.contains('hidden');
+    salaryCalcPopup.classList.toggle('hidden');
+    if (opening) scMonthly.focus();
+  });
+
+  salaryCalcClose.addEventListener('click', () => {
+    salaryCalcPopup.classList.add('hidden');
+  });
+
+  [scMonthly, scMonths, scBonus].forEach((el) => {
+    el.addEventListener('input', updateSalaryCalcResult);
+  });
+
+  scUseBtn.addEventListener('click', () => {
+    const total = parseFloat(scUseBtn.dataset.value) || 0;
+    if (total > 0) {
+      document.getElementById('annual-income').value = total;
+      updateExpenseHint();
+      clearError('income-error');
+    }
+    salaryCalcPopup.classList.add('hidden');
+  });
+
+  document.addEventListener('click', (e) => {
+    if (
+      !salaryCalcPopup.classList.contains('hidden') &&
+      !salaryCalcPopup.contains(e.target) &&
+      e.target !== salaryCalcBtn &&
+      !salaryCalcBtn.contains(e.target)
+    ) {
+      salaryCalcPopup.classList.add('hidden');
+    }
+  });
+
+  /* Initialize salary calc result */
+  updateSalaryCalcResult();
+
   /* ── Income hint ── */
   document.getElementById('annual-income').addEventListener('input', updateExpenseHint);
   document.getElementById('income-type').addEventListener('change', updateExpenseHint);
+
+  /* ── Capped-field inline validation ── */
+  const CAPPED_FIELDS = [
+    { id: 'social-security',    max: SS_MAX },
+    { id: 'life-insurance',     max: LIFE_INS_MAX },
+    { id: 'health-insurance',   max: HEALTH_INS_MAX },
+    { id: 'parents-health-ins', max: PARENTS_HEALTH_MAX },
+    { id: 'mortgage-interest',  max: MORTGAGE_MAX },
+    { id: 'existing-ssf',       max: SSF_MAX },
+    { id: 'existing-rmf',       max: RMF_MAX },
+    { id: 'existing-esg',       max: ESG_MAX },
+  ];
+  CAPPED_FIELDS.forEach(({ id, max }) => {
+    const input = document.getElementById(id);
+    if (input) input.addEventListener('input', () => validateMax(id, max));
+  });
 
   /* ── Step 1 → Step 2 ── */
   document.getElementById('step1-next').addEventListener('click', () => {
