@@ -353,7 +353,7 @@ function renderResults(summary) {
   ).join('');
 
   const breakdownHTML = `
-    <p class="breakdown-title">รายละเอียดค่าลดหย่อน</p>
+    <p class="section-title">ค่าลดหย่อนและภาษีสุทธิ</p>
     <table class="breakdown-table">
       <thead><tr><th>รายการ</th><th class="amt">จำนวน (บาท)</th></tr></thead>
       <tbody>
@@ -361,7 +361,7 @@ function renderResults(summary) {
         ${breakdownRows}
         <tr class="total-row">
           <td>เงินได้สุทธิ (ฐานภาษี)</td>
-          <td class="amt">${fmtNumber(summary.taxableIncome)}</td>
+          <td class="amt total">${fmtNumber(summary.taxableIncome)}</td>
         </tr>
       </tbody>
     </table>`;
@@ -403,12 +403,12 @@ function renderResults(summary) {
 
   const ladderHTML = `
     <div class="bracket-section">
-      <p class="breakdown-title">ขั้นบันไดภาษี (เงินได้สุทธิ ${fmtBaht(summary.taxableIncome)})</p>
+      <p class="section-title">ขั้นบันไดภาษี</p>
       <div class="bracket-bar-wrap">
         <div class="bracket-ladder">${ladderRows}</div>
       </div>
-      <p class="hint" style="margin-top:.5rem">
-        ขั้นบันไดปัจจุบัน: <strong>${summary.marginalBracket.label}</strong> &nbsp;|&nbsp;
+      <p class="bracket-summary-note">
+        อัตราปัจจุบัน: <strong>${summary.marginalBracket.label}</strong> &nbsp;|&nbsp;
         ภาษีรวม: <strong>${fmtBaht(summary.currentTax)}</strong>
       </p>
     </div>`;
@@ -420,11 +420,13 @@ function renderResults(summary) {
 
   let targetsHTML = '';
   if (lowerBrackets.length === 0) {
-    targetsHTML = `<p class="hint" style="color:var(--clr-success);font-weight:600">
-      🎉 คุณอยู่ในขั้นบันได 0% แล้ว! ไม่ต้องเสียภาษีเงินได้บุคคลธรรมดา</p>`;
+    targetsHTML = `<div class="zero-tax-msg">
+      <span class="ztm-icon">🎉</span>
+      <span>คุณอยู่ในขั้นบันได 0% แล้ว ไม่ต้องเสียภาษีเงินได้บุคคลธรรมดา!</span>
+    </div>`;
   } else {
+    const chevronSVG = `<svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M3 5l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
     const cardItems = lowerBrackets.reverse().map((target, idx) => {
-      // Target: reduce taxable income to just at the top of this bracket
       const targetTaxableIncome = target.max;
       const neededDeduction     = Math.max(0, summary.taxableIncome - targetTaxableIncome);
       if (neededDeduction === 0) return '';
@@ -434,14 +436,14 @@ function renderResults(summary) {
       const { plan, achievable, remainingShortfall } =
         buildOptimalPlan(neededDeduction, cap, marginalRate);
 
-      const totalSpend  = plan.reduce((s, p) => s + p.spendAmt, 0);
-      const totalInvest = plan.filter((p) => p.category === 'invest')
-                              .reduce((s, p) => s + p.spendAmt, 0);
+      const totalSpend     = plan.reduce((s, p) => s + p.spendAmt, 0);
+      const totalInvest    = plan.filter((p) => p.category === 'invest')
+                                 .reduce((s, p) => s + p.spendAmt, 0);
       const totalPermanent = plan.filter((p) => p.category !== 'invest')
                                  .reduce((s, p) => s + p.spendAmt, 0);
 
       const planRows = plan.map((p) => {
-        const catMap = { invest: 'type-invest', insure: 'type-insure', donate: 'type-donate' };
+        const catMap   = { invest: 'type-invest', insure: 'type-insure', donate: 'type-donate' };
         const catLabel = { invest: 'ลงทุน', insure: 'ประกัน', donate: 'บริจาค' };
         return `
           <tr>
@@ -454,7 +456,7 @@ function renderResults(summary) {
       }).join('');
 
       const achievableClass = achievable ? 'achievable' : 'not-achievable';
-      const savingBadge = achievable
+      const savingBadge     = achievable
         ? `ประหยัดภาษีได้ ${fmtBaht(taxSaving)}`
         : `ขาดลดหย่อน ${fmtBaht(remainingShortfall)}`;
 
@@ -463,16 +465,13 @@ function renderResults(summary) {
           <p class="plan-intro">
             ลดหย่อนเพิ่มอีก <strong>${fmtBaht(neededDeduction)}</strong>
             เพื่อให้เงินได้สุทธิ ≤ ${fmtBaht(targetTaxableIncome)}
-            และประหยัดภาษีได้ <strong style="color:var(--clr-success)">${fmtBaht(taxSaving)}</strong>
+            และประหยัดภาษีได้ <strong class="saving">${fmtBaht(taxSaving)}</strong>
           </p>
           <table class="plan-table">
             <thead>
               <tr>
-                <th>รายการ</th>
-                <th class="amt">ลดหย่อน (บ.)</th>
-                <th class="amt">จ่ายจริง (บ.)</th>
-                <th>ประเภท</th>
-                <th>หมายเหตุ</th>
+                <th>รายการ</th><th class="amt">ลดหย่อน (บ.)</th>
+                <th class="amt">จ่ายจริง (บ.)</th><th>ประเภท</th><th>หมายเหตุ</th>
               </tr>
             </thead>
             <tbody>${planRows}</tbody>
@@ -480,7 +479,7 @@ function renderResults(summary) {
           <div class="cost-summary">
             <div class="cost-item">
               <span class="ci-label">ลดหย่อนเพิ่มรวม</span>
-              <span class="ci-value blue">${fmtBaht(neededDeduction)}</span>
+              <span class="ci-value gold">${fmtBaht(neededDeduction)}</span>
             </div>
             <div class="cost-item">
               <span class="ci-label">เงินที่ต้องใช้ทันที</span>
@@ -502,10 +501,9 @@ function renderResults(summary) {
         </div>` : `
         <div class="target-card-body">
           <p class="not-achievable-note">
-            ⚠️ ช่องทางลดหย่อนทั้งหมดที่เหลืออยู่รวมกัน
-            (<strong>${fmtBaht(neededDeduction - remainingShortfall)}</strong>) ยังไม่เพียงพอ<br>
-            ต้องการลดหย่อนเพิ่ม <strong>${fmtBaht(neededDeduction)}</strong>
-            แต่ขาดอีก <strong>${fmtBaht(remainingShortfall)}</strong> บาท
+            ⚠️ ช่องทางลดหย่อนที่เหลือรวมกัน (<strong>${fmtBaht(neededDeduction - remainingShortfall)}</strong>)
+            ยังไม่เพียงพอ — ต้องการ <strong>${fmtBaht(neededDeduction)}</strong>
+            แต่ขาดอีก <strong>${fmtBaht(remainingShortfall)}</strong>
           </p>
           ${plan.length > 0 ? `
           <p class="plan-intro">แผนที่ทำได้บางส่วน:</p>
@@ -525,10 +523,10 @@ function renderResults(summary) {
           <div class="target-card-header" onclick="toggleTarget('target-${idx}')">
             <span class="target-bracket-label">
               ${achievable ? '✅' : '❌'} ลดเป็นขั้นบันได <strong>${target.label}</strong>
-              &nbsp;(เงินได้สุทธิ ≤ ${fmtBaht(targetTaxableIncome)})
+              &nbsp;— เงินได้สุทธิ ≤ ${fmtBaht(targetTaxableIncome)}
             </span>
             <span class="target-savings-badge">${savingBadge}</span>
-            <span class="target-toggle-icon">▼</span>
+            <span class="target-toggle-icon">${chevronSVG}</span>
           </div>
           ${bodyHTML}
         </div>`;
@@ -536,10 +534,8 @@ function renderResults(summary) {
 
     targetsHTML = `
       <div class="targets-section">
-        <h3>🎯 แผนลดหย่อนเพื่อลดขั้นบันไดภาษี</h3>
-        <p class="hint" style="margin-bottom:.85rem">
-          คลิกที่แต่ละเป้าหมายเพื่อดูรายละเอียดแผนลดหย่อนที่ใช้เงินน้อยที่สุด
-        </p>
+        <p class="section-title">แผนลดหย่อนเพื่อลดขั้นบันไดภาษี</p>
+        <p>คลิกที่แต่ละเป้าหมายเพื่อดูรายละเอียดแผนที่ใช้เงินน้อยที่สุด</p>
         ${cardItems}
       </div>`;
   }
@@ -590,16 +586,18 @@ function setStep(n) {
     const ind = document.getElementById(`ind-${i}`);
     const line = ind ? ind.nextElementSibling : null;
     ind.classList.remove('active', 'done');
+    const circle = ind.querySelector('.step-circle');
+    const span   = circle ? circle.querySelector('span') : circle;
     if (i < n) {
       ind.classList.add('done');
-      ind.querySelector('.step-circle').textContent = '✓';
+      if (span) span.textContent = '✓';
       if (line && line.classList.contains('step-line')) line.classList.add('done');
     } else if (i === n) {
       ind.classList.add('active');
-      ind.querySelector('.step-circle').textContent = i;
+      if (span) span.textContent = String(i).padStart(2, '0');
       if (line && line.classList.contains('step-line')) line.classList.remove('done');
     } else {
-      ind.querySelector('.step-circle').textContent = i;
+      if (span) span.textContent = String(i).padStart(2, '0');
       if (line && line.classList.contains('step-line')) line.classList.remove('done');
     }
     document.getElementById(`step${i}`).classList.toggle('hidden', i !== n);
@@ -624,6 +622,20 @@ function updateExpenseHint() {
    ───────────────────────────────────────────── */
 
 document.addEventListener('DOMContentLoaded', () => {
+
+  /* ── Number steppers ── */
+  document.querySelectorAll('.stepper-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const targetId = btn.dataset.target;
+      const delta    = parseInt(btn.dataset.delta, 10);
+      const input    = document.getElementById(targetId);
+      if (!input) return;
+      const min = parseInt(input.min, 10) || 0;
+      const max = parseInt(input.max, 10) || 999;
+      const cur = parseInt(input.value, 10) || 0;
+      input.value = Math.min(max, Math.max(min, cur + delta));
+    });
+  });
 
   /* ── Accordion toggles ── */
   document.querySelectorAll('.accordion-toggle').forEach((btn) => {
