@@ -655,6 +655,63 @@ document.addEventListener('DOMContentLoaded', () => {
     b.classList.add('open');
   });
 
+  /* ── Salary Calculator Popup ── */
+  const salaryCalcBtn   = document.getElementById('salary-calc-btn');
+  const salaryCalcPopup = document.getElementById('salary-calc-popup');
+  const salaryCalcClose = document.getElementById('salary-calc-close');
+  const scMonthly       = document.getElementById('sc-monthly');
+  const scMonths        = document.getElementById('sc-months');
+  const scBonus         = document.getElementById('sc-bonus');
+  const scResult        = document.getElementById('sc-result');
+  const scUseBtn        = document.getElementById('sc-use-btn');
+
+  function updateSalaryCalcResult() {
+    const monthly = parseFloat(scMonthly.value) || 0;
+    const months  = parseInt(scMonths.value, 10) || 12;
+    const bonus   = parseFloat(scBonus.value) || 0;
+    const total   = monthly * months + bonus;
+    scResult.textContent = FMT.format(Math.round(total));
+    scUseBtn.dataset.value = total;
+  }
+
+  salaryCalcBtn.addEventListener('click', () => {
+    const opening = salaryCalcPopup.classList.contains('hidden');
+    salaryCalcPopup.classList.toggle('hidden');
+    if (opening) scMonthly.focus();
+  });
+
+  salaryCalcClose.addEventListener('click', () => {
+    salaryCalcPopup.classList.add('hidden');
+  });
+
+  [scMonthly, scMonths, scBonus].forEach((el) => {
+    el.addEventListener('input', updateSalaryCalcResult);
+  });
+
+  scUseBtn.addEventListener('click', () => {
+    const total = parseFloat(scUseBtn.dataset.value) || 0;
+    if (total > 0) {
+      document.getElementById('annual-income').value = total;
+      updateExpenseHint();
+      clearError('income-error');
+    }
+    salaryCalcPopup.classList.add('hidden');
+  });
+
+  document.addEventListener('click', (e) => {
+    if (
+      !salaryCalcPopup.classList.contains('hidden') &&
+      !salaryCalcPopup.contains(e.target) &&
+      e.target !== salaryCalcBtn &&
+      !salaryCalcBtn.contains(e.target)
+    ) {
+      salaryCalcPopup.classList.add('hidden');
+    }
+  });
+
+  /* Initialize salary calc result */
+  updateSalaryCalcResult();
+
   /* ── Income hint ── */
   document.getElementById('annual-income').addEventListener('input', updateExpenseHint);
   document.getElementById('income-type').addEventListener('change', updateExpenseHint);
