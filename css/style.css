@@ -654,6 +654,11 @@ input[type="number"] { -moz-appearance: textfield; }
 }
 .error-msg.show { display: block; }
 
+input[type="number"].input-error {
+  border-color: var(--red) !important;
+  box-shadow: 0 0 0 3px rgba(248,113,113,.12);
+}
+
 /* ── Results ─────────────────────────────────────────────── */
 
 /* Summary grid */
