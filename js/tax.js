@@ -744,6 +744,7 @@ function renderResults(summary, priorityOrder) {
         const totalPermanent = plan
           .filter((p) => p.category !== "invest")
           .reduce((s, p) => s + p.spendAmt, 0);
+        const netRealSaving = taxSaving - totalSpend;
 
         const planRows = plan
           .map((p) => {
@@ -770,7 +771,7 @@ function renderResults(summary, priorityOrder) {
 
         const achievableClass = achievable ? "achievable" : "not-achievable";
         const savingBadge = achievable
-          ? `ประหยัดภาษีได้ ${fmtBaht(taxSaving)}`
+          ? `ประหยัดได้จริง ${fmtBaht(netRealSaving)}`
           : `ขาดลดหย่อน ${fmtBaht(remainingShortfall)}`;
 
         const bodyHTML = achievable
@@ -811,6 +812,10 @@ function renderResults(summary, priorityOrder) {
               <span class="ci-label">ประหยัดภาษีสุทธิ</span>
               <span class="ci-value green">${fmtBaht(taxSaving)}</span>
             </div>
+            <div class="cost-item">
+              <span class="ci-label">ประหยัดได้จริง (หักเงินที่ต้องใช้ทันที)</span>
+              <span class="ci-value ${netRealSaving >= 0 ? "green" : "red"}">${fmtBaht(netRealSaving)}</span>
+            </div>
           </div>
         </div>`
           : `
@@ -844,7 +849,7 @@ function renderResults(summary, priorityOrder) {
               ${achievable ? "✅" : "❌"} ลดเป็นขั้นบันได <strong>${target.label}</strong>
               &nbsp;— เงินได้สุทธิ ≤ ${fmtBaht(targetTaxableIncome)}
             </span>
-            <span class="target-savings-badge">${savingBadge}</span>
+            <span class="target-savings-badge" style="${achievable && netRealSaving < 0 ? "background:var(--red);color:#fff;" : ""}">${savingBadge}</span>
             <span class="target-toggle-icon">${chevronSVG}</span>
           </div>
           ${bodyHTML}

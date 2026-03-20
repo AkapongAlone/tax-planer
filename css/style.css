@@ -1350,6 +1350,9 @@ input[type="number"].input-error {
 .ci-value.gold {
   color: var(--gold);
 }
+.ci-value.red {
+  color: var(--red);
+}
 
 .not-achievable-note {
   font-size: 0.85rem;
