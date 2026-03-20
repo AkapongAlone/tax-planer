@@ -72,6 +72,19 @@ function getMarginalBracket(taxableIncome) {
 }
 
 /**
+ * Return the amount of taxable income that falls within a bracket.
+ * @param {number} taxableIncome
+ * @param {object} bracket  A TAX_BRACKETS entry
+ * @param {number} prevMax  Upper bound of the preceding bracket (0 for the first)
+ * @returns {number}
+ */
+function incomeInBracket(taxableIncome, bracket, prevMax) {
+  if (taxableIncome < bracket.min) return 0;
+  const top = bracket.max === Infinity ? taxableIncome : Math.min(taxableIncome, bracket.max);
+  return Math.max(0, top - prevMax);
+}
+
+/**
  * Calculate expense deduction based on income type.
  * @param {number} income
  * @param {'salary'|'freelance'} incomeType
@@ -401,6 +414,60 @@ function renderResults(summary) {
       </div>`;
   }).join('');
 
+  // ── Detailed bracket table ──────────────────────────────
+  const marginalBracketIndex = TAX_BRACKETS.indexOf(summary.marginalBracket);
+
+  // Pre-compute cumulative max tax per bracket
+  const cumulativeMaxTaxes = TAX_BRACKETS.reduce((acc, b, idx) => {
+    const prevMax        = idx === 0 ? 0 : TAX_BRACKETS[idx - 1].max;
+    const ceiling        = b.max === Infinity ? null : (b.max - prevMax);
+    const maxTax         = b.rate === 0 ? 0 : (ceiling === null ? null : Math.round(ceiling * b.rate));
+    const prev           = idx === 0 ? 0 : (acc[idx - 1] ?? 0);
+    acc.push(b.max === Infinity ? null : prev + (maxTax ?? 0));
+    return acc;
+  }, []);
+
+  const bracketTableRows = TAX_BRACKETS.map((b, idx) => {
+    const prevMax          = idx === 0 ? 0 : TAX_BRACKETS[idx - 1].max;
+    const bracketCeiling   = b.max === Infinity ? null : (b.max - prevMax);
+    const maxTaxInBracket  = b.rate === 0 ? 0
+      : (bracketCeiling === null ? null : Math.round(bracketCeiling * b.rate));
+    const cumulativeMaxTax = cumulativeMaxTaxes[idx];
+
+    const userInBracket    = incomeInBracket(summary.taxableIncome, b, prevMax);
+    const userTaxInBracket = Math.round(userInBracket * b.rate);
+    const isCurrent        = idx === marginalBracketIndex;
+
+    const rangeLabel    = b.max === Infinity
+      ? `${fmtNumber(b.min)} ขึ้นไป`
+      : `${fmtNumber(b.min)} – ${fmtNumber(b.max)}`;
+    const ceilingLabel  = bracketCeiling !== null ? fmtNumber(bracketCeiling) : 'ไม่จำกัด';
+    const rateLabel     = b.rate === 0 ? 'ยกเว้น' : b.label;
+    const maxTaxLabel   = maxTaxInBracket === null ? 'ไม่จำกัด' : fmtNumber(maxTaxInBracket);
+    const cumMaxLabel   = cumulativeMaxTax === null ? 'ไม่จำกัด' : fmtNumber(cumulativeMaxTax);
+    const userInLabel   = userInBracket > 0 ? fmtNumber(userInBracket) : '–';
+    const userTaxLabel  = userInBracket > 0
+      ? (userTaxInBracket > 0 ? fmtNumber(userTaxInBracket) : '0')
+      : '–';
+
+    return `
+      <tr class="${isCurrent ? 'bdt-current' : ''}">
+        <td class="bdt-num">${idx + 1}</td>
+        <td>${rangeLabel}</td>
+        <td class="bdt-num-col">${ceilingLabel}</td>
+        <td class="bdt-rate ${isCurrent ? 'bdt-rate-current' : ''}">${rateLabel}</td>
+        <td class="bdt-num-col">${maxTaxLabel}</td>
+        <td class="bdt-num-col">${cumMaxLabel}</td>
+        <td class="bdt-num-col bdt-user">${userInLabel}</td>
+        <td class="bdt-num-col bdt-user">${userTaxLabel}</td>
+      </tr>`;
+  }).join('');
+
+  // User position summary
+  const prevMaxForMarginal = marginalBracketIndex === 0 ? 0 : TAX_BRACKETS[marginalBracketIndex - 1].max;
+  const userInMarginalBracket = incomeInBracket(
+    summary.taxableIncome, summary.marginalBracket, prevMaxForMarginal);
+
   const ladderHTML = `
     <div class="bracket-section">
       <p class="section-title">ขั้นบันไดภาษี</p>
@@ -411,6 +478,31 @@ function renderResults(summary) {
         อัตราปัจจุบัน: <strong>${summary.marginalBracket.label}</strong> &nbsp;|&nbsp;
         ภาษีรวม: <strong>${fmtBaht(summary.currentTax)}</strong>
       </p>
+      <p class="section-title" style="margin-top:1.5rem">อัตราภาษีขั้นบันได</p>
+      <div class="bdt-scroll">
+        <table class="bracket-detail-table">
+          <thead>
+            <tr>
+              <th>ขั้น</th>
+              <th>ขั้นเงินได้สุทธิ (บาท)</th>
+              <th>เพดานของแต่ละขั้น</th>
+              <th>อัตราภาษี</th>
+              <th>ภาษีสูงสุดของขั้น</th>
+              <th>ภาษีสะสมสูงสุดของขั้น</th>
+              <th>รายได้ของคุณในขั้นนี้</th>
+              <th>ภาษีที่คุณจ่ายในขั้นนี้</th>
+            </tr>
+          </thead>
+          <tbody>${bracketTableRows}</tbody>
+        </table>
+      </div>
+      <div class="current-bracket-info">
+        <span class="cbi-pin">📍</span>
+        <span>คุณอยู่ใน<strong>ขั้นที่ ${marginalBracketIndex + 1}</strong>
+        (อัตรา <strong>${summary.marginalBracket.label}</strong>)
+        &nbsp;·&nbsp;
+        เงินได้สุทธิที่นำมาคำนวณในขั้นนี้ <strong class="cbi-amount">${fmtBaht(userInMarginalBracket)}</strong></span>
+      </div>
     </div>`;
 
   // ── Target bracket recommendations ────────────────────
