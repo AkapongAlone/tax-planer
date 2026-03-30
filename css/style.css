@@ -1,48 +1,73 @@
 /* =============================================================
-  PlanTax — Thai Tax Planner
-   Design: Premium Dark "Thai Gold Standard"
-   Fonts: Kanit (headings) + IBM Plex Sans Thai (body)
+   PlanTax — Thai Tax Planner
+   Design: Clean Light "Accessible & Professional"
+   Font: Noto Sans Thai
    ============================================================= */
 
 /* ── Variables ───────────────────────────────────────────── */
 :root {
-  /* Palette */
-  --gold: #f5b700;
-  --gold-lt: #fde68a;
-  --gold-dk: #b45309;
-  --jade: #10b981;
-  --jade-lt: #d1fae5;
-  --jade-dk: #065f46;
-  --red: #f87171;
-  --red-lt: #fee2e2;
-  --blue-acc: #60a5fa;
+  /* Font */
+  --font: 'Noto Sans Thai', system-ui, sans-serif;
 
-  /* Dark surfaces */
-  --bg: #0b0f1a;
-  --surface: #111827;
-  --surface-lt: #1a2235;
-  --surface-md: #1f2d45;
-  --border: rgba(255, 255, 255, 0.08);
-  --border-gold: rgba(245, 183, 0, 0.25);
-  --border-hover: rgba(245, 183, 0, 0.5);
+  /* Primary (Blue) */
+  --primary: #2563EB;
+  --primary-hover: #1D4ED8;
+  --primary-light: #DBEAFE;
+  --primary-lighter: #EFF6FF;
+
+  /* CTA (Orange) */
+  --cta: #F97316;
+  --cta-hover: #EA580C;
+  --cta-light: #FFF7ED;
+
+  /* Semantic */
+  --success: #16A34A;
+  --success-light: #DCFCE7;
+  --success-border: #BBF7D0;
+  --danger: #DC2626;
+  --danger-light: #FEE2E2;
+  --danger-border: #FECACA;
+  --warning: #D97706;
+  --warning-light: #FEF3C7;
+
+  /* Surfaces */
+  --bg: #F8FAFC;
+  --surface: #FFFFFF;
+  --surface-secondary: #F1F5F9;
+  --surface-tertiary: #E2E8F0;
+
+  /* Borders */
+  --border: #E2E8F0;
+  --border-hover: #CBD5E1;
+  --border-focus: #2563EB;
 
   /* Text */
-  --text: #f1f5f9;
-  --text-muted: #94a3b8;
-  --text-dim: #64748b;
-
-  /* Glow */
-  --glow-gold: 0 0 24px rgba(245, 183, 0, 0.18);
-  --glow-jade: 0 0 24px rgba(16, 185, 129, 0.18);
+  --text: #1E293B;
+  --text-secondary: #475569;
+  --text-muted: #64748B;
+  --text-dim: #94A3B8;
+  --text-on-primary: #FFFFFF;
+  --text-on-cta: #FFFFFF;
 
   /* Radius */
   --r-sm: 6px;
-  --r: 12px;
-  --r-lg: 18px;
-  --r-xl: 24px;
+  --r: 8px;
+  --r-lg: 12px;
+  --r-xl: 16px;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+  --shadow: 0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06);
+  --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -2px rgba(0,0,0,0.1);
+  --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -4px rgba(0,0,0,0.1);
+
+  /* Focus */
+  --focus-ring: 0 0 0 3px rgba(37, 99, 235, 0.35);
+  --focus-ring-cta: 0 0 0 3px rgba(249, 115, 22, 0.35);
 
   /* Transitions */
-  --t: 0.2s ease;
+  --t: 0.15s ease;
+  --t-slow: 0.3s ease;
 }
 
 /* ── Reset ───────────────────────────────────────────────── */
@@ -53,95 +78,41 @@
   margin: 0;
   padding: 0;
 }
+
 html {
   scroll-behavior: smooth;
   font-size: 16px;
 }
+
 body {
-  font-family: "IBM Plex Sans Thai", "Sarabun", sans-serif;
+  font-family: var(--font);
   background: var(--bg);
   color: var(--text);
   min-height: 100vh;
   display: flex;
   flex-direction: column;
   overflow-x: hidden;
+  line-height: 1.5;
 }
 
-/* ── Background Mesh ─────────────────────────────────────── */
-.bg-mesh {
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-  overflow: hidden;
-}
-
-.mesh-orb {
+/* ── Skip Link ──────────────────────────────────────────── */
+.skip-link {
   position: absolute;
-  border-radius: 50%;
-  filter: blur(80px);
-  opacity: 0.35;
+  top: -100%;
+  left: 16px;
+  z-index: 100;
+  padding: 0.75rem 1.25rem;
+  background: var(--primary);
+  color: var(--text-on-primary);
+  border-radius: var(--r);
+  font-weight: 600;
+  font-size: 0.875rem;
+  text-decoration: none;
+  transition: top var(--t);
 }
 
-.mesh-orb-1 {
-  width: 600px;
-  height: 600px;
-  top: -200px;
-  left: -200px;
-  background: radial-gradient(
-    circle,
-    rgba(245, 183, 0, 0.5) 0%,
-    transparent 70%
-  );
-  animation: orb-float 16s ease-in-out infinite;
-}
-
-.mesh-orb-2 {
-  width: 500px;
-  height: 500px;
-  bottom: -150px;
-  right: -150px;
-  background: radial-gradient(
-    circle,
-    rgba(16, 185, 129, 0.45) 0%,
-    transparent 70%
-  );
-  animation: orb-float 20s ease-in-out infinite reverse;
-}
-
-.mesh-orb-3 {
-  width: 400px;
-  height: 400px;
-  top: 50%;
-  left: 60%;
-  background: radial-gradient(
-    circle,
-    rgba(96, 165, 250, 0.35) 0%,
-    transparent 70%
-  );
-  animation: orb-float 24s ease-in-out infinite 4s;
-}
-
-@keyframes orb-float {
-  0%,
-  100% {
-    transform: translate(0, 0) scale(1);
-  }
-  33% {
-    transform: translate(30px, -40px) scale(1.05);
-  }
-  66% {
-    transform: translate(-20px, 30px) scale(0.95);
-  }
-}
-
-.grid-lines {
-  position: absolute;
-  inset: 0;
-  background-image:
-    linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
-  background-size: 60px 60px;
+.skip-link:focus {
+  top: 16px;
 }
 
 /* ── Header ──────────────────────────────────────────────── */
@@ -149,10 +120,9 @@ header {
   position: relative;
   z-index: 10;
   border-bottom: 1px solid var(--border);
-  background: rgba(11, 15, 26, 0.85);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  background: var(--surface);
   padding: 1rem 1.5rem;
+  box-shadow: var(--shadow-sm);
 }
 
 .header-content {
@@ -170,28 +140,27 @@ header {
   align-items: center;
   gap: 0.65rem;
   text-decoration: none;
-  color: var(--gold);
+  color: var(--primary);
 }
 
 .logo-mark {
   width: 36px;
   height: 36px;
-  background: linear-gradient(135deg, var(--gold), var(--gold-dk));
+  background: var(--primary);
   border-radius: var(--r-sm);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #0b0f1a;
+  color: var(--text-on-primary);
   flex-shrink: 0;
-  box-shadow: var(--glow-gold);
 }
 
 .logo-text {
-  font-family: "Kanit", sans-serif;
+  font-family: var(--font);
   font-weight: 700;
   font-size: 1.4rem;
   letter-spacing: -0.01em;
-  color: var(--gold);
+  color: var(--text);
 }
 
 .header-tagline {
@@ -202,9 +171,9 @@ header {
 }
 
 .pill {
-  background: rgba(245, 183, 0, 0.12);
-  color: var(--gold);
-  border: 1px solid var(--border-gold);
+  background: var(--primary-lighter);
+  color: var(--primary);
+  border: 1px solid var(--primary-light);
   border-radius: 20px;
   padding: 0.2rem 0.75rem;
   font-size: 0.78rem;
@@ -237,7 +206,7 @@ main {
   border: 1px solid var(--border);
   border-radius: var(--r-lg);
   padding: 1.1rem 2rem;
-  backdrop-filter: blur(8px);
+  box-shadow: var(--shadow-sm);
   animation: fade-up 0.4s ease both;
 }
 
@@ -261,7 +230,7 @@ main {
   height: 40px;
   border-radius: 50%;
   border: 2px solid var(--border);
-  background: var(--surface-lt);
+  background: var(--surface-secondary);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -269,7 +238,7 @@ main {
 }
 
 .step-circle span {
-  font-family: "Kanit", sans-serif;
+  font-family: var(--font);
   font-size: 0.78rem;
   font-weight: 700;
   color: var(--text-dim);
@@ -287,39 +256,42 @@ main {
 .step-line {
   flex: 1;
   max-width: 140px;
-  height: 1px;
+  height: 2px;
   background: var(--border);
   margin: 0 0.75rem;
   margin-bottom: 1.5rem;
   transition: background var(--t);
+  border-radius: 1px;
 }
 
 /* Active state */
 .step-item.active .step-circle {
-  background: rgba(245, 183, 0, 0.12);
-  border-color: var(--gold);
-  box-shadow: 0 0 0 4px rgba(245, 183, 0, 0.1);
+  background: var(--primary-lighter);
+  border-color: var(--primary);
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
 }
 
 .step-item.active .step-circle span,
 .step-item.active .step-label {
-  color: var(--gold);
+  color: var(--primary);
 }
 
 /* Done state */
 .step-item.done .step-circle {
-  background: var(--gold);
-  border-color: var(--gold);
+  background: var(--primary);
+  border-color: var(--primary);
 }
 
 .step-item.done .step-circle span {
-  color: #0b0f1a;
+  color: var(--text-on-primary);
 }
+
 .step-item.done .step-label {
-  color: var(--gold);
+  color: var(--primary);
 }
+
 .step-line.done {
-  background: var(--gold);
+  background: var(--primary);
 }
 
 /* ── Cards ───────────────────────────────────────────────── */
@@ -328,22 +300,10 @@ main {
   border: 1px solid var(--border);
   border-radius: var(--r-xl);
   padding: 2rem;
-  backdrop-filter: blur(8px);
+  box-shadow: var(--shadow);
   animation: fade-up 0.4s ease both;
   position: relative;
   overflow: hidden;
-}
-
-/* Golden top accent line */
-.card::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background: linear-gradient(90deg, transparent, var(--gold), transparent);
-  opacity: 0.5;
 }
 
 .hidden {
@@ -358,11 +318,11 @@ main {
 }
 
 .card-step-num {
-  font-family: "Kanit", sans-serif;
+  font-family: var(--font);
   font-size: 2.5rem;
   font-weight: 800;
   line-height: 1;
-  color: rgba(245, 183, 0, 0.2);
+  color: rgba(37, 99, 235, 0.12);
   letter-spacing: -0.03em;
   flex-shrink: 0;
   padding-top: 0.05rem;
@@ -370,7 +330,7 @@ main {
 }
 
 .card-title {
-  font-family: "Kanit", sans-serif;
+  font-family: var(--font);
   font-size: 1.4rem;
   font-weight: 700;
   color: var(--text);
@@ -380,7 +340,7 @@ main {
 
 .card-desc {
   font-size: 0.88rem;
-  color: var(--text-muted);
+  color: var(--text-secondary);
   line-height: 1.55;
 }
 
@@ -403,13 +363,13 @@ main {
 label {
   font-size: 0.82rem;
   font-weight: 600;
-  color: var(--text-muted);
+  color: var(--text-secondary);
   letter-spacing: 0.01em;
 }
 
 .label-cap {
   font-weight: 400;
-  color: var(--text-dim);
+  color: var(--text-muted);
   font-size: 0.78rem;
 }
 
@@ -423,7 +383,7 @@ label {
   top: 50%;
   transform: translateY(-50%);
   pointer-events: none;
-  color: var(--text-dim);
+  color: var(--text-muted);
   width: 14px;
   height: 14px;
 }
@@ -432,7 +392,7 @@ select,
 input[type="number"] {
   width: 100%;
   padding: 0.65rem 0.85rem;
-  background: var(--surface-lt);
+  background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--r-sm);
   font-family: inherit;
@@ -454,9 +414,9 @@ select {
 select:focus,
 input[type="number"]:focus {
   outline: none;
-  border-color: var(--gold);
-  background: var(--surface-md);
-  box-shadow: 0 0 0 3px rgba(245, 183, 0, 0.12);
+  border-color: var(--primary);
+  background: var(--surface);
+  box-shadow: var(--focus-ring);
 }
 
 .input-with-unit {
@@ -471,22 +431,22 @@ input[type="number"]:focus {
 
 .unit {
   font-size: 0.8rem;
-  color: var(--text-dim);
+  color: var(--text-muted);
   white-space: nowrap;
   flex-shrink: 0;
 }
 
 .hint {
   font-size: 0.78rem;
-  color: var(--jade);
+  color: var(--success);
   margin-top: 0.1rem;
   min-height: 1em;
 }
 
 .hint-block {
   font-size: 0.8rem;
-  color: var(--text-dim);
-  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-secondary);
+  background: var(--surface-secondary);
   border: 1px solid var(--border);
   border-radius: var(--r-sm);
   padding: 0.55rem 0.85rem;
@@ -506,7 +466,7 @@ input[type="number"]:focus {
   gap: 0.65rem;
   cursor: pointer;
   font-size: 0.88rem;
-  color: var(--text-muted) !important;
+  color: var(--text-secondary) !important;
   font-weight: 400 !important;
   user-select: none;
 }
@@ -523,7 +483,7 @@ input[type="number"]:focus {
   height: 20px;
   border-radius: 5px;
   border: 2px solid var(--border);
-  background: var(--surface-lt);
+  background: var(--surface);
   flex-shrink: 0;
   display: flex;
   align-items: center;
@@ -532,8 +492,8 @@ input[type="number"]:focus {
 }
 
 .checkbox-label input:checked ~ .checkmark {
-  background: var(--gold);
-  border-color: var(--gold);
+  background: var(--primary);
+  border-color: var(--primary);
 }
 
 .checkbox-label input:checked ~ .checkmark::after {
@@ -541,7 +501,7 @@ input[type="number"]:focus {
   display: block;
   width: 5px;
   height: 9px;
-  border: 2px solid #0b0f1a;
+  border: 2px solid #fff;
   border-top: none;
   border-left: none;
   transform: rotate(45deg) translateY(-1px);
@@ -549,7 +509,7 @@ input[type="number"]:focus {
 
 .check-amount {
   font-weight: 700;
-  color: var(--gold);
+  color: var(--primary);
   margin-left: 0.15rem;
 }
 
@@ -566,9 +526,9 @@ input[type="number"]:focus {
 .stepper-btn {
   width: 38px;
   height: 40px;
-  background: var(--surface-lt);
+  background: var(--surface-secondary);
   border: none;
-  color: var(--text-muted);
+  color: var(--text-secondary);
   font-size: 1.2rem;
   line-height: 1;
   cursor: pointer;
@@ -579,8 +539,8 @@ input[type="number"]:focus {
 }
 
 .stepper-btn:hover {
-  background: rgba(245, 183, 0, 0.15);
-  color: var(--gold);
+  background: var(--primary-light);
+  color: var(--primary);
 }
 
 .number-stepper input[type="number"] {
@@ -599,6 +559,7 @@ input[type="number"]::-webkit-outer-spin-button {
   -webkit-appearance: none;
   margin: 0;
 }
+
 input[type="number"] {
   -moz-appearance: textfield;
 }
@@ -613,39 +574,40 @@ input[type="number"] {
 }
 
 .deduction-section:hover {
-  border-color: var(--border-gold);
+  border-color: var(--border-hover);
 }
 
 .accordion-toggle {
   width: 100%;
-  background: var(--surface-lt);
+  background: var(--surface-secondary);
   border: none;
   padding: 0.85rem 1rem;
   display: flex;
   align-items: center;
   gap: 0.6rem;
   cursor: pointer;
-  font-family: "Kanit", sans-serif;
+  font-family: var(--font);
   font-size: 0.95rem;
   font-weight: 600;
-  color: var(--text-muted);
+  color: var(--text-secondary);
   transition:
     color var(--t),
     background var(--t);
 }
 
 .accordion-toggle:hover {
-  color: var(--gold);
-  background: rgba(245, 183, 0, 0.06);
+  color: var(--primary);
+  background: var(--primary-lighter);
 }
+
 .accordion-toggle.open {
-  color: var(--gold);
+  color: var(--primary);
 }
 
 .acc-icon-prefix {
   display: flex;
   align-items: center;
-  color: var(--gold);
+  color: var(--primary);
   opacity: 0.7;
   flex-shrink: 0;
 }
@@ -664,7 +626,7 @@ input[type="number"] {
   padding: 1.1rem;
   display: none;
   border-top: 1px solid var(--border);
-  background: rgba(11, 15, 26, 0.3);
+  background: var(--surface);
 }
 
 .accordion-body.open {
@@ -686,14 +648,15 @@ input[type="number"] {
   align-items: center;
   gap: 0.5rem;
   padding: 0.7rem 1.5rem;
-  border-radius: var(--r-sm);
+  border-radius: var(--r);
   border: 1.5px solid transparent;
-  font-family: "Kanit", sans-serif;
+  font-family: var(--font);
   font-size: 0.95rem;
   font-weight: 600;
   cursor: pointer;
   transition: all var(--t);
   letter-spacing: 0.01em;
+  min-height: 44px;
 }
 
 .btn:active {
@@ -701,48 +664,53 @@ input[type="number"] {
 }
 
 .btn-primary {
-  background: var(--gold);
-  color: #0b0f1a;
-  border-color: var(--gold);
-  box-shadow: var(--glow-gold);
+  background: var(--cta);
+  color: var(--text-on-cta);
+  border-color: var(--cta);
+  box-shadow: var(--shadow-sm);
 }
 
 .btn-primary:hover {
-  background: var(--gold-lt);
-  border-color: var(--gold-lt);
-  box-shadow: 0 0 32px rgba(245, 183, 0, 0.3);
+  background: var(--cta-hover);
+  border-color: var(--cta-hover);
+  box-shadow: var(--shadow-md);
+}
+
+.btn-primary:focus-visible {
+  box-shadow: var(--focus-ring-cta);
 }
 
 .btn-ghost {
   background: transparent;
-  color: var(--text-muted);
+  color: var(--text-secondary);
   border-color: var(--border);
 }
 
 .btn-ghost:hover {
   color: var(--text);
-  border-color: rgba(255, 255, 255, 0.2);
-  background: rgba(255, 255, 255, 0.05);
+  border-color: var(--border-hover);
+  background: var(--surface-secondary);
 }
 
 /* ── Error ───────────────────────────────────────────────── */
 .error-msg {
-  background: rgba(248, 113, 113, 0.1);
-  color: var(--red);
-  border: 1px solid rgba(248, 113, 113, 0.25);
+  background: var(--danger-light);
+  color: var(--danger);
+  border: 1px solid var(--danger-border);
   border-radius: var(--r-sm);
   padding: 0.55rem 0.85rem;
   font-size: 0.82rem;
   margin-top: 0.4rem;
   display: none;
 }
+
 .error-msg.show {
   display: block;
 }
 
 input[type="number"].input-error {
-  border-color: var(--red) !important;
-  box-shadow: 0 0 0 3px rgba(248, 113, 113, 0.12);
+  border-color: var(--danger) !important;
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.12);
 }
 
 /* ── Results ─────────────────────────────────────────────── */
@@ -756,55 +724,49 @@ input[type="number"].input-error {
 }
 
 .summary-card {
-  background: var(--surface-lt);
+  background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--r);
   padding: 1rem 1.1rem;
   position: relative;
   transition: border-color var(--t);
   animation: fade-up 0.35s ease both;
+  box-shadow: var(--shadow-sm);
 }
 
-.summary-card:nth-child(1) {
-  animation-delay: 0s;
-}
-.summary-card:nth-child(2) {
-  animation-delay: 0.07s;
-}
-.summary-card:nth-child(3) {
-  animation-delay: 0.14s;
-}
-.summary-card:nth-child(4) {
-  animation-delay: 0.21s;
-}
+.summary-card:nth-child(1) { animation-delay: 0s; }
+.summary-card:nth-child(2) { animation-delay: 0.07s; }
+.summary-card:nth-child(3) { animation-delay: 0.14s; }
+.summary-card:nth-child(4) { animation-delay: 0.21s; }
 
 .summary-card.highlight {
-  border-color: var(--border-gold);
-  background: rgba(245, 183, 0, 0.07);
-  box-shadow: var(--glow-gold);
+  border-color: var(--primary);
+  background: var(--primary-lighter);
+  box-shadow: var(--shadow);
 }
 
 .summary-card .sc-label {
   font-size: 0.73rem;
   font-weight: 600;
-  color: var(--text-dim);
+  color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.06em;
   margin-bottom: 0.4rem;
 }
 
 .summary-card .sc-value {
-  font-family: "Kanit", sans-serif;
+  font-family: var(--font);
   font-size: 1.5rem;
   font-weight: 700;
   color: var(--text);
   line-height: 1;
   margin-bottom: 0.25rem;
   letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
 }
 
 .summary-card.highlight .sc-value {
-  color: var(--gold);
+  color: var(--primary);
 }
 
 .summary-card .sc-sub {
@@ -814,10 +776,10 @@ input[type="number"].input-error {
 
 /* Section titles */
 .section-title {
-  font-family: "Kanit", sans-serif;
+  font-family: var(--font);
   font-size: 0.9rem;
   font-weight: 700;
-  color: var(--text-muted);
+  color: var(--text);
   text-transform: uppercase;
   letter-spacing: 0.08em;
   margin: 1.75rem 0 0.75rem;
@@ -846,11 +808,11 @@ input[type="number"].input-error {
 }
 
 .breakdown-table th {
-  background: var(--surface-lt);
+  background: var(--surface-secondary);
   padding: 0.55rem 0.85rem;
   text-align: left;
   font-weight: 700;
-  color: var(--text-dim);
+  color: var(--text-muted);
   text-transform: uppercase;
   font-size: 0.72rem;
   letter-spacing: 0.06em;
@@ -859,8 +821,8 @@ input[type="number"].input-error {
 
 .breakdown-table td {
   padding: 0.5rem 0.85rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
-  color: var(--text-muted);
+  border-bottom: 1px solid var(--border);
+  color: var(--text-secondary);
 }
 
 .breakdown-table tr:last-child td {
@@ -870,21 +832,23 @@ input[type="number"].input-error {
 .breakdown-table .total-row td {
   font-weight: 700;
   color: var(--text);
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--surface-secondary);
   border-top: 1px solid var(--border);
 }
 
 .amt {
   text-align: right;
   font-variant-numeric: tabular-nums;
-  font-family: "Kanit", sans-serif;
+  font-family: var(--font);
   font-size: 0.88rem;
 }
+
 .amt.negative {
-  color: var(--jade);
+  color: var(--success);
 }
+
 .amt.total {
-  color: var(--gold);
+  color: var(--primary);
 }
 
 /* Bracket ladder */
@@ -893,7 +857,7 @@ input[type="number"].input-error {
 }
 
 .bracket-bar-wrap {
-  background: rgba(11, 15, 26, 0.5);
+  background: var(--surface-secondary);
   border: 1px solid var(--border);
   border-radius: var(--r);
   padding: 1rem 1.1rem;
@@ -917,16 +881,16 @@ input[type="number"].input-error {
 .bracket-row .br-label {
   width: 34px;
   text-align: right;
-  font-family: "Kanit", sans-serif;
+  font-family: var(--font);
   font-weight: 700;
   font-size: 0.78rem;
-  color: var(--text-dim);
+  color: var(--text-muted);
   flex-shrink: 0;
 }
 
 .bracket-row .br-bar-wrap {
   flex: 1;
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--surface-tertiary);
   border-radius: 4px;
   height: 24px;
   overflow: hidden;
@@ -942,7 +906,7 @@ input[type="number"].input-error {
   padding-left: 0.5rem;
   font-size: 0.72rem;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.9);
+  color: #fff;
   white-space: nowrap;
   overflow: hidden;
 }
@@ -950,63 +914,47 @@ input[type="number"].input-error {
 .bracket-row .br-tax-amt {
   width: 96px;
   text-align: right;
-  font-family: "Kanit", sans-serif;
+  font-family: var(--font);
   font-weight: 600;
-  color: var(--text-dim);
+  color: var(--text-muted);
   flex-shrink: 0;
   font-size: 0.8rem;
 }
 
 .bracket-row.current-bracket .br-label,
 .bracket-row.current-bracket .br-tax-amt {
-  color: var(--gold);
+  color: var(--primary);
 }
 
 .bracket-row.current-bracket .br-bar-wrap::after {
-  content: "◀ อัตราปัจจุบัน";
+  content: "\25C0  อัตราปัจจุบัน";
   position: absolute;
   right: 0.5rem;
   top: 50%;
   transform: translateY(-50%);
   font-size: 0.68rem;
   font-weight: 700;
-  color: var(--gold);
-  font-family: "Kanit", sans-serif;
+  color: var(--primary);
+  font-family: var(--font);
 }
 
-.bar-0 {
-  background: linear-gradient(90deg, #22c55e, #16a34a);
-}
-.bar-5 {
-  background: linear-gradient(90deg, #3b82f6, #2563eb);
-}
-.bar-10 {
-  background: linear-gradient(90deg, #6366f1, #4f46e5);
-}
-.bar-15 {
-  background: linear-gradient(90deg, #a855f7, #9333ea);
-}
-.bar-20 {
-  background: linear-gradient(90deg, #f59e0b, #d97706);
-}
-.bar-25 {
-  background: linear-gradient(90deg, #f97316, #ea580c);
-}
-.bar-30 {
-  background: linear-gradient(90deg, #ef4444, #dc2626);
-}
-.bar-35 {
-  background: linear-gradient(90deg, #be123c, #9f1239);
-}
+.bar-0  { background: linear-gradient(90deg, #22c55e, #16a34a); }
+.bar-5  { background: linear-gradient(90deg, #3b82f6, #2563eb); }
+.bar-10 { background: linear-gradient(90deg, #6366f1, #4f46e5); }
+.bar-15 { background: linear-gradient(90deg, #a855f7, #9333ea); }
+.bar-20 { background: linear-gradient(90deg, #f59e0b, #d97706); }
+.bar-25 { background: linear-gradient(90deg, #f97316, #ea580c); }
+.bar-30 { background: linear-gradient(90deg, #ef4444, #dc2626); }
+.bar-35 { background: linear-gradient(90deg, #be123c, #9f1239); }
 
 .bracket-summary-note {
   font-size: 0.78rem;
-  color: var(--text-dim);
+  color: var(--text-muted);
   margin-top: 0.65rem;
 }
 
 .bracket-summary-note strong {
-  color: var(--gold);
+  color: var(--primary);
 }
 
 /* Bracket detail table */
@@ -1025,16 +973,16 @@ input[type="number"].input-error {
 }
 
 .bracket-detail-table thead tr {
-  background: var(--surface-lt);
+  background: var(--surface-secondary);
 }
 
 .bracket-detail-table th {
   padding: 0.55rem 0.7rem;
   text-align: center;
-  font-family: "Kanit", sans-serif;
+  font-family: var(--font);
   font-weight: 700;
   font-size: 0.72rem;
-  color: var(--text-dim);
+  color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.04em;
   border-bottom: 1px solid var(--border);
@@ -1047,8 +995,8 @@ input[type="number"].input-error {
 
 .bracket-detail-table td {
   padding: 0.48rem 0.7rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
-  color: var(--text-muted);
+  border-bottom: 1px solid var(--border);
+  color: var(--text-secondary);
   text-align: center;
   font-variant-numeric: tabular-nums;
 }
@@ -1062,42 +1010,42 @@ input[type="number"].input-error {
 }
 
 .bracket-detail-table tbody tr:hover td {
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--surface-secondary);
 }
 
 /* Current bracket highlight */
 .bracket-detail-table tr.bdt-current td {
-  background: rgba(245, 183, 0, 0.07);
+  background: var(--primary-lighter);
   color: var(--text);
 }
 
 .bracket-detail-table tr.bdt-current td.bdt-rate-current {
-  color: var(--gold);
-  font-family: "Kanit", sans-serif;
+  color: var(--primary);
+  font-family: var(--font);
   font-weight: 700;
 }
 
 .bracket-detail-table .bdt-num {
-  font-family: "Kanit", sans-serif;
+  font-family: var(--font);
   font-weight: 700;
-  color: var(--text-dim);
+  color: var(--text-muted);
   width: 36px;
 }
 
 .bracket-detail-table tr.bdt-current .bdt-num {
-  color: var(--gold);
+  color: var(--primary);
 }
 
 .bracket-detail-table .bdt-num-col {
-  font-family: "Kanit", sans-serif;
+  font-family: var(--font);
 }
 
 .bracket-detail-table .bdt-user {
-  color: var(--jade);
+  color: var(--success);
 }
 
 .bracket-detail-table tr.bdt-current .bdt-user {
-  color: var(--gold);
+  color: var(--primary);
   font-weight: 700;
 }
 
@@ -1108,17 +1056,20 @@ input[type="number"].input-error {
   gap: 0.6rem;
   margin-top: 0.85rem;
   padding: 0.7rem 1rem;
-  background: rgba(245, 183, 0, 0.07);
-  border: 1px solid rgba(245, 183, 0, 0.2);
+  background: var(--primary-lighter);
+  border: 1px solid var(--primary-light);
   border-radius: var(--r);
   font-size: 0.84rem;
-  color: var(--text-muted);
+  color: var(--text-secondary);
   line-height: 1.6;
 }
 
 .current-bracket-info .cbi-pin {
   font-size: 1rem;
   flex-shrink: 0;
+  color: var(--primary);
+  display: flex;
+  align-items: center;
 }
 
 .current-bracket-info strong {
@@ -1126,7 +1077,7 @@ input[type="number"].input-error {
 }
 
 .current-bracket-info .cbi-amount {
-  color: var(--gold);
+  color: var(--primary);
 }
 
 /* Target recommendation cards */
@@ -1136,7 +1087,7 @@ input[type="number"].input-error {
 
 .targets-section > p {
   font-size: 0.82rem;
-  color: var(--text-dim);
+  color: var(--text-muted);
   margin-bottom: 1rem;
 }
 
@@ -1149,19 +1100,20 @@ input[type="number"].input-error {
     border-color var(--t),
     box-shadow var(--t);
   animation: fade-up 0.35s ease both;
+  box-shadow: var(--shadow-sm);
 }
 
 .target-card.achievable {
-  border-color: rgba(16, 185, 129, 0.25);
+  border-color: var(--success-border);
 }
 
 .target-card.achievable:hover {
-  border-color: rgba(16, 185, 129, 0.5);
-  box-shadow: var(--glow-jade);
+  border-color: var(--success);
+  box-shadow: var(--shadow-md);
 }
 
 .target-card.not-achievable {
-  opacity: 0.6;
+  opacity: 0.7;
 }
 
 .target-card-header {
@@ -1169,49 +1121,57 @@ input[type="number"].input-error {
   align-items: center;
   padding: 0.95rem 1.1rem;
   cursor: pointer;
-  background: var(--surface-lt);
+  background: var(--surface-secondary);
   transition: background var(--t);
   gap: 0.65rem;
   flex-wrap: wrap;
 }
 
 .target-card-header:hover {
-  background: var(--surface-md);
+  background: var(--surface-tertiary);
 }
 
 .target-card.achievable .target-card-header {
-  background: rgba(16, 185, 129, 0.07);
+  background: var(--success-light);
 }
 
 .target-bracket-label {
-  font-family: "Kanit", sans-serif;
+  font-family: var(--font);
   font-size: 0.95rem;
   font-weight: 700;
   color: var(--text);
   flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.target-bracket-label svg {
+  flex-shrink: 0;
 }
 
 .target-savings-badge {
-  background: var(--jade);
-  color: #0b0f1a;
+  background: var(--success);
+  color: #fff;
   padding: 0.2rem 0.75rem;
   border-radius: 20px;
-  font-family: "Kanit", sans-serif;
+  font-family: var(--font);
   font-size: 0.8rem;
   font-weight: 700;
   white-space: nowrap;
 }
 
 .target-card.not-achievable .target-savings-badge {
-  background: var(--surface-lt);
-  color: var(--text-dim);
+  background: var(--surface-tertiary);
+  color: var(--text-muted);
 }
 
 .target-toggle-icon {
   width: 24px;
   height: 24px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.07);
+  background: var(--surface-tertiary);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1219,17 +1179,19 @@ input[type="number"].input-error {
   transition:
     transform var(--t),
     background var(--t);
+  color: var(--text-muted);
 }
 
 .target-card.expanded .target-toggle-icon {
   transform: rotate(180deg);
-  background: rgba(245, 183, 0, 0.15);
+  background: var(--primary-light);
+  color: var(--primary);
 }
 
 .target-card-body {
   padding: 1.1rem;
   border-top: 1px solid var(--border);
-  background: rgba(11, 15, 26, 0.4);
+  background: var(--surface);
   display: none;
 }
 
@@ -1239,7 +1201,7 @@ input[type="number"].input-error {
 
 .plan-intro {
   font-size: 0.85rem;
-  color: var(--text-muted);
+  color: var(--text-secondary);
   margin-bottom: 0.85rem;
   line-height: 1.6;
 }
@@ -1247,8 +1209,9 @@ input[type="number"].input-error {
 .plan-intro strong {
   color: var(--text);
 }
+
 .plan-intro .saving {
-  color: var(--jade);
+  color: var(--success);
 }
 
 .plan-table {
@@ -1262,11 +1225,11 @@ input[type="number"].input-error {
 }
 
 .plan-table th {
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--surface-secondary);
   padding: 0.4rem 0.65rem;
   text-align: left;
   font-weight: 700;
-  color: var(--text-dim);
+  color: var(--text-muted);
   text-transform: uppercase;
   font-size: 0.7rem;
   letter-spacing: 0.05em;
@@ -1275,8 +1238,8 @@ input[type="number"].input-error {
 
 .plan-table td {
   padding: 0.42rem 0.65rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
-  color: var(--text-muted);
+  border-bottom: 1px solid var(--border);
+  color: var(--text-secondary);
   vertical-align: middle;
 }
 
@@ -1290,32 +1253,34 @@ input[type="number"].input-error {
   border-radius: 10px;
   font-size: 0.68rem;
   font-weight: 700;
-  font-family: "Kanit", sans-serif;
+  font-family: var(--font);
 }
 
 .type-invest {
-  background: rgba(96, 165, 250, 0.15);
-  color: var(--blue-acc);
-  border: 1px solid rgba(96, 165, 250, 0.2);
+  background: var(--primary-light);
+  color: var(--primary);
+  border: 1px solid rgba(37, 99, 235, 0.2);
 }
+
 .type-insure {
-  background: rgba(168, 85, 247, 0.15);
-  color: #c084fc;
-  border: 1px solid rgba(168, 85, 247, 0.2);
+  background: #F3E8FF;
+  color: #7C3AED;
+  border: 1px solid rgba(124, 58, 237, 0.2);
 }
+
 .type-donate {
-  background: rgba(245, 183, 0, 0.12);
-  color: var(--gold);
-  border: 1px solid var(--border-gold);
+  background: var(--cta-light);
+  color: var(--cta);
+  border: 1px solid rgba(249, 115, 22, 0.2);
 }
 
 .plan-note {
   font-size: 0.72rem;
-  color: var(--text-dim);
+  color: var(--text-muted);
 }
 
 .cost-summary {
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--surface-secondary);
   border: 1px solid var(--border);
   border-radius: var(--r-sm);
   padding: 0.85rem 1rem;
@@ -1329,40 +1294,45 @@ input[type="number"].input-error {
   flex-direction: column;
   gap: 0.15rem;
 }
+
 .ci-label {
   font-size: 0.7rem;
-  color: var(--text-dim);
+  color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
+
 .ci-value {
-  font-family: "Kanit", sans-serif;
+  font-family: var(--font);
   font-size: 1rem;
   font-weight: 700;
   color: var(--text);
+  font-variant-numeric: tabular-nums;
 }
-.ci-value.green {
-  color: var(--jade);
-}
-.ci-value.blue {
-  color: var(--blue-acc);
-}
-.ci-value.gold {
-  color: var(--gold);
-}
-.ci-value.red {
-  color: var(--red);
-}
+
+.ci-value.green { color: var(--success); }
+.ci-value.blue  { color: var(--primary); }
+.ci-value.gold  { color: var(--primary); }
+.ci-value.red   { color: var(--danger); }
 
 .not-achievable-note {
   font-size: 0.85rem;
-  color: var(--text-dim);
+  color: var(--text-muted);
   padding: 0.25rem 0;
   line-height: 1.6;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.4rem;
+}
+
+.not-achievable-note svg {
+  flex-shrink: 0;
+  margin-top: 0.15rem;
+  color: var(--danger);
 }
 
 .not-achievable-note strong {
-  color: var(--red);
+  color: var(--danger);
 }
 
 /* All-zero special message */
@@ -1370,19 +1340,20 @@ input[type="number"].input-error {
   display: flex;
   align-items: center;
   gap: 0.85rem;
-  background: rgba(16, 185, 129, 0.08);
-  border: 1px solid rgba(16, 185, 129, 0.25);
+  background: var(--success-light);
+  border: 1px solid var(--success-border);
   border-radius: var(--r);
   padding: 1.1rem 1.25rem;
-  color: var(--jade);
-  font-family: "Kanit", sans-serif;
+  color: var(--success);
+  font-family: var(--font);
   font-size: 1rem;
   font-weight: 600;
-  box-shadow: var(--glow-jade);
 }
 
 .zero-tax-msg .ztm-icon {
   font-size: 1.5rem;
+  display: flex;
+  align-items: center;
 }
 
 /* ── Priority list ───────────────────────────────────────── */
@@ -1400,7 +1371,7 @@ input[type="number"].input-error {
   align-items: center;
   gap: 0.55rem;
   padding: 0.55rem 0.75rem;
-  background: var(--surface-lt);
+  background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--r-sm);
   cursor: default;
@@ -1414,7 +1385,7 @@ input[type="number"].input-error {
 
 .priority-item:hover {
   border-color: var(--border-hover);
-  background: var(--surface-md);
+  background: var(--surface-secondary);
 }
 
 .priority-item.dragging {
@@ -1422,9 +1393,9 @@ input[type="number"].input-error {
 }
 
 .priority-item.drag-over {
-  border-color: var(--gold);
-  background: rgba(245, 183, 0, 0.07);
-  box-shadow: 0 0 0 2px rgba(245, 183, 0, 0.18);
+  border-color: var(--primary);
+  background: var(--primary-lighter);
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.18);
 }
 
 .priority-drag-handle {
@@ -1439,21 +1410,22 @@ input[type="number"].input-error {
 }
 
 .priority-drag-handle:hover {
-  color: var(--gold);
+  color: var(--primary);
 }
+
 .priority-item.dragging .priority-drag-handle {
   cursor: grabbing;
 }
 
 .priority-rank {
-  font-family: "Kanit", sans-serif;
+  font-family: var(--font);
   font-size: 0.7rem;
   font-weight: 700;
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.07);
-  color: var(--text-dim);
+  background: var(--surface-secondary);
+  color: var(--text-muted);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1463,7 +1435,7 @@ input[type="number"].input-error {
 .priority-label {
   flex: 1;
   font-size: 0.83rem;
-  color: var(--text-muted);
+  color: var(--text-secondary);
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1480,10 +1452,10 @@ input[type="number"].input-error {
 .priority-arrow-btn {
   width: 22px;
   height: 18px;
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--surface-secondary);
   border: 1px solid var(--border);
   border-radius: 3px;
-  color: var(--text-dim);
+  color: var(--text-muted);
   font-size: 0.6rem;
   line-height: 1;
   cursor: pointer;
@@ -1498,9 +1470,9 @@ input[type="number"].input-error {
 }
 
 .priority-arrow-btn:hover:not([disabled]) {
-  background: rgba(245, 183, 0, 0.15);
-  color: var(--gold);
-  border-color: var(--border-gold);
+  background: var(--primary-light);
+  color: var(--primary);
+  border-color: var(--primary-light);
 }
 
 .priority-arrow-btn[disabled] {
@@ -1512,8 +1484,8 @@ input[type="number"].input-error {
 .optimize-toggle-wrap {
   margin-bottom: 0.75rem;
   padding: 0.85rem 1rem;
-  background: linear-gradient(135deg, rgba(245, 183, 0, 0.06) 0%, rgba(16, 185, 129, 0.04) 100%);
-  border: 1px solid var(--border-gold);
+  background: var(--primary-lighter);
+  border: 1px solid var(--primary-light);
   border-radius: var(--r);
 }
 
@@ -1534,10 +1506,10 @@ input[type="number"].input-error {
 }
 
 .optimize-toggle-title {
-  font-family: "Kanit", sans-serif;
+  font-family: var(--font);
   font-weight: 600;
   font-size: 0.9rem;
-  color: var(--gold);
+  color: var(--primary);
   display: flex;
   align-items: center;
   gap: 0.4rem;
@@ -1545,7 +1517,7 @@ input[type="number"].input-error {
 
 .optimize-toggle-desc {
   font-size: 0.75rem;
-  color: var(--text-dim);
+  color: var(--text-muted);
   line-height: 1.4;
 }
 
@@ -1566,10 +1538,11 @@ input[type="number"].input-error {
   display: block;
   width: 46px;
   height: 26px;
-  background: var(--surface-md);
+  background: var(--surface-tertiary);
   border: 1px solid var(--border);
   border-radius: 13px;
   position: relative;
+  cursor: pointer;
   transition: background 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
 }
 
@@ -1585,14 +1558,13 @@ input[type="number"].input-error {
 }
 
 .toggle-switch input:checked ~ .toggle-track {
-  background: rgba(245, 183, 0, 0.2);
-  border-color: var(--gold);
-  box-shadow: 0 0 12px rgba(245, 183, 0, 0.15);
+  background: var(--primary-light);
+  border-color: var(--primary);
 }
 
 .toggle-switch input:checked ~ .toggle-track .toggle-knob {
   transform: translateX(20px);
-  background: var(--gold);
+  background: var(--primary);
 }
 
 /* Dim the priority list when optimize is active */
@@ -1613,12 +1585,12 @@ input[type="number"].input-error {
   align-items: center;
   gap: 0.35rem;
   padding: 0.2rem 0.6rem;
-  background: linear-gradient(135deg, rgba(245, 183, 0, 0.15), rgba(245, 183, 0, 0.08));
-  border: 1px solid var(--border-gold);
+  background: var(--primary-lighter);
+  border: 1px solid var(--primary-light);
   border-radius: 20px;
   font-size: 0.7rem;
   font-weight: 600;
-  color: var(--gold);
+  color: var(--primary);
   margin-left: 0.5rem;
   vertical-align: middle;
 }
@@ -1626,15 +1598,15 @@ input[type="number"].input-error {
 .optimize-order-summary {
   margin-top: 0.6rem;
   padding: 0.6rem 0.8rem;
-  background: rgba(245, 183, 0, 0.04);
-  border: 1px solid rgba(245, 183, 0, 0.12);
+  background: var(--primary-lighter);
+  border: 1px solid var(--primary-light);
   border-radius: var(--r-sm);
 }
 
 .optimize-order-title {
   font-size: 0.72rem;
   font-weight: 600;
-  color: var(--gold);
+  color: var(--primary);
   margin-bottom: 0.3rem;
   display: flex;
   align-items: center;
@@ -1652,18 +1624,18 @@ input[type="number"].input-error {
   align-items: center;
   gap: 0.2rem;
   padding: 0.15rem 0.45rem;
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 4px;
   font-size: 0.68rem;
-  color: var(--text-muted);
+  color: var(--text-secondary);
 }
 
 .optimize-order-chip .chip-num {
-  font-family: "Kanit", sans-serif;
+  font-family: var(--font);
   font-weight: 700;
   font-size: 0.6rem;
-  color: var(--gold);
+  color: var(--primary);
   margin-right: 0.15rem;
 }
 
@@ -1680,11 +1652,11 @@ input[type="number"].input-error {
   align-items: center;
   gap: 0.35rem;
   padding: 0.3rem 0.65rem;
-  background: rgba(245, 183, 0, 0.08);
-  border: 1px solid var(--border-gold);
+  background: var(--primary-lighter);
+  border: 1px solid var(--primary-light);
   border-radius: var(--r-sm);
-  color: var(--gold);
-  font-family: "Kanit", sans-serif;
+  color: var(--primary);
+  font-family: var(--font);
   font-size: 0.75rem;
   font-weight: 600;
   cursor: pointer;
@@ -1694,9 +1666,8 @@ input[type="number"].input-error {
 }
 
 .calc-trigger-btn:hover {
-  background: rgba(245, 183, 0, 0.16);
-  border-color: var(--gold);
-  box-shadow: var(--glow-gold);
+  background: var(--primary-light);
+  border-color: var(--primary);
 }
 
 .calc-trigger-btn:active {
@@ -1706,12 +1677,10 @@ input[type="number"].input-error {
 .salary-calc-popup {
   position: relative;
   margin-top: 0.65rem;
-  background: var(--surface-lt);
-  border: 1px solid var(--border-gold);
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: var(--r);
-  box-shadow:
-    0 8px 32px rgba(0, 0, 0, 0.45),
-    var(--glow-gold);
+  box-shadow: var(--shadow-lg);
   overflow: hidden;
   animation: fade-up 0.2s ease both;
 }
@@ -1721,10 +1690,10 @@ input[type="number"].input-error {
   align-items: center;
   gap: 0.5rem;
   padding: 0.75rem 1rem;
-  background: rgba(245, 183, 0, 0.06);
-  border-bottom: 1px solid var(--border-gold);
-  color: var(--gold);
-  font-family: "Kanit", sans-serif;
+  background: var(--primary-lighter);
+  border-bottom: 1px solid var(--border);
+  color: var(--primary);
+  font-family: var(--font);
   font-size: 0.88rem;
   font-weight: 700;
 }
@@ -1737,7 +1706,7 @@ input[type="number"].input-error {
   margin-left: auto;
   background: none;
   border: none;
-  color: var(--text-dim);
+  color: var(--text-muted);
   cursor: pointer;
   padding: 0.2rem;
   border-radius: 4px;
@@ -1750,7 +1719,7 @@ input[type="number"].input-error {
 
 .salary-calc-close:hover {
   color: var(--text);
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--surface-tertiary);
 }
 
 .salary-calc-body {
@@ -1769,7 +1738,7 @@ input[type="number"].input-error {
 .salary-calc-label {
   font-size: 0.78rem;
   font-weight: 600;
-  color: var(--text-muted);
+  color: var(--text-secondary);
   width: 140px;
   flex-shrink: 0;
 }
@@ -1785,7 +1754,7 @@ input[type="number"].input-error {
   flex: 1;
   padding: 0.45rem 0.65rem !important;
   font-size: 0.88rem !important;
-  background: var(--surface-md) !important;
+  background: var(--surface) !important;
   border: 1px solid var(--border) !important;
   border-radius: var(--r-sm) !important;
   color: var(--text) !important;
@@ -1794,13 +1763,13 @@ input[type="number"].input-error {
 
 .salary-calc-input:focus {
   outline: none;
-  border-color: var(--gold) !important;
-  box-shadow: 0 0 0 3px rgba(245, 183, 0, 0.12) !important;
+  border-color: var(--primary) !important;
+  box-shadow: var(--focus-ring) !important;
 }
 
 .salary-calc-unit {
   font-size: 0.75rem;
-  color: var(--text-dim);
+  color: var(--text-muted);
   white-space: nowrap;
   flex-shrink: 0;
   min-width: 38px;
@@ -1810,8 +1779,8 @@ input[type="number"].input-error {
   display: flex;
   align-items: baseline;
   gap: 0.45rem;
-  background: rgba(245, 183, 0, 0.07);
-  border: 1px solid var(--border-gold);
+  background: var(--primary-lighter);
+  border: 1px solid var(--primary-light);
   border-radius: var(--r-sm);
   padding: 0.6rem 0.85rem;
   margin-top: 0.25rem;
@@ -1819,16 +1788,16 @@ input[type="number"].input-error {
 
 .salary-calc-result-label {
   font-size: 0.75rem;
-  color: var(--text-muted);
+  color: var(--text-secondary);
   font-weight: 600;
   flex-shrink: 0;
 }
 
 .salary-calc-result-value {
-  font-family: "Kanit", sans-serif;
+  font-family: var(--font);
   font-size: 1.3rem;
   font-weight: 700;
-  color: var(--gold);
+  color: var(--primary);
   flex: 1;
   text-align: right;
   font-variant-numeric: tabular-nums;
@@ -1836,7 +1805,7 @@ input[type="number"].input-error {
 
 .salary-calc-result-unit {
   font-size: 0.75rem;
-  color: var(--text-dim);
+  color: var(--text-muted);
   flex-shrink: 0;
 }
 
@@ -1853,8 +1822,7 @@ footer {
   position: relative;
   z-index: 5;
   border-top: 1px solid var(--border);
-  background: rgba(11, 15, 26, 0.85);
-  backdrop-filter: blur(12px);
+  background: var(--surface);
   padding: 1rem 1.5rem;
 }
 
@@ -1867,24 +1835,42 @@ footer {
   flex-wrap: wrap;
   gap: 0.4rem 0.75rem;
   font-size: 0.78rem;
-  color: var(--text-dim);
+  color: var(--text-muted);
 }
 
 .footer-brand {
-  font-family: "Kanit", sans-serif;
+  font-family: var(--font);
   font-weight: 700;
-  color: var(--gold);
+  color: var(--primary);
 }
 
 .footer-sep {
   opacity: 0.4;
 }
 
+/* ── Focus Visible ──────────────────────────────────────── */
+:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+button:focus-visible,
+a:focus-visible,
+select:focus-visible,
+input:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.btn-primary:focus-visible {
+  box-shadow: var(--focus-ring-cta);
+}
+
 /* ── Animations ──────────────────────────────────────────── */
 @keyframes fade-up {
   from {
     opacity: 0;
-    transform: translateY(16px);
+    transform: translateY(8px);
   }
   to {
     opacity: 1;
@@ -1892,7 +1878,27 @@ footer {
   }
 }
 
+/* ── Reduced Motion ──────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
 /* ── Responsive ──────────────────────────────────────────── */
+@media (max-width: 768px) {
+  main {
+    padding: 1.5rem 1rem 2.5rem;
+  }
+  .card {
+    padding: 1.5rem 1.25rem;
+  }
+}
+
 @media (max-width: 640px) {
   main {
     padding: 1.25rem 0.85rem 2.5rem;
@@ -1920,5 +1926,12 @@ footer {
   }
   .header-tagline {
     display: none;
+  }
+  .salary-calc-row {
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+  .salary-calc-label {
+    width: auto;
   }
 }

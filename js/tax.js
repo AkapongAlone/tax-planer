@@ -71,6 +71,14 @@ let currentPriorityOrder = PRIORITY_ITEMS.map((p) => p.id);
 /** Cached permutations of priority IDs (computed once on first use) */
 let cachedPermutations = null;
 
+/* ── SVG Icon constants (replacing emoji) ────────────────── */
+const ICON_PIN = `<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M8 1C5.24 1 3 3.24 3 6c0 3.75 5 9 5 9s5-5.25 5-9c0-2.76-2.24-5-5-5zm0 7a2 2 0 110-4 2 2 0 010 4z" fill="currentColor"/></svg>`;
+const ICON_CELEBRATE = `<svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M10 18a8 8 0 100-16 8 8 0 000 16z" stroke="currentColor" stroke-width="1.5"/><path d="M6.5 10l2.5 2.5L13.5 7" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+const ICON_BOLT = `<svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M8.5 1L3 9h4.5L6.5 15 13 7H8.5L9.5 1z" fill="currentColor"/></svg>`;
+const ICON_CHECK = `<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.5"/><path d="M5 8l2 2 4-4" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+const ICON_CROSS = `<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.5"/><path d="M5.5 5.5l5 5M10.5 5.5l-5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>`;
+const ICON_WARN = `<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M8 1.5L1 14h14L8 1.5z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M8 6v4M8 12h.01" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>`;
+
 /* ─────────────────────────────────────────────
    2. TAX CALCULATION
    ───────────────────────────────────────────── */
@@ -787,7 +795,7 @@ function renderResults(summary, priorityOrder, optimize) {
         </table>
       </div>
       <div class="current-bracket-info">
-        <span class="cbi-pin">📍</span>
+        <span class="cbi-pin">${ICON_PIN}</span>
         <span>คุณอยู่ใน<strong>ขั้นที่ ${marginalBracketIndex + 1}</strong>
         (อัตรา <strong>${summary.marginalBracket.label}</strong>)
         &nbsp;·&nbsp;
@@ -803,7 +811,7 @@ function renderResults(summary, priorityOrder, optimize) {
   let targetsHTML = "";
   if (lowerBrackets.length === 0) {
     targetsHTML = `<div class="zero-tax-msg">
-      <span class="ztm-icon">🎉</span>
+      <span class="ztm-icon">${ICON_CELEBRATE}</span>
       <span>คุณอยู่ในขั้นบันได 0% แล้ว ไม่ต้องเสียภาษีเงินได้บุคคลธรรมดา!</span>
     </div>`;
   } else {
@@ -882,13 +890,13 @@ function renderResults(summary, priorityOrder, optimize) {
 
         const optimizeOrderHTML = optimize && orderChips
           ? `<div class="optimize-order-summary">
-               <div class="optimize-order-title">⚡ ลำดับที่ดีที่สุดสำหรับขั้นนี้</div>
+               <div class="optimize-order-title">${ICON_BOLT} ลำดับที่ดีที่สุดสำหรับขั้นนี้</div>
                <div class="optimize-order-list">${orderChips}</div>
              </div>`
           : "";
 
         const optimizeBadgeHTML = optimize
-          ? `<span class="optimize-badge">⚡ Optimized</span>`
+          ? `<span class="optimize-badge">${ICON_BOLT} Optimized</span>`
           : "";
 
         const achievableClass = achievable ? "achievable" : "not-achievable";
@@ -944,7 +952,7 @@ function renderResults(summary, priorityOrder, optimize) {
           : `
         <div class="target-card-body">
           <p class="not-achievable-note">
-            ⚠️ ช่องทางลดหย่อนที่เหลือรวมกัน (<strong>${fmtBaht(neededDeduction - remainingShortfall)}</strong>)
+            ${ICON_WARN} ช่องทางลดหย่อนที่เหลือรวมกัน (<strong>${fmtBaht(neededDeduction - remainingShortfall)}</strong>)
             ยังไม่เพียงพอ — ต้องการ <strong>${fmtBaht(neededDeduction)}</strong>
             แต่ขาดอีก <strong>${fmtBaht(remainingShortfall)}</strong>
           </p>
@@ -970,11 +978,11 @@ function renderResults(summary, priorityOrder, optimize) {
         <div class="target-card ${achievableClass}" id="target-${idx}">
           <div class="target-card-header" onclick="toggleTarget('target-${idx}')">
             <span class="target-bracket-label">
-              ${achievable ? "✅" : "❌"} ลดเป็นขั้นบันได <strong>${target.label}</strong>
+              ${achievable ? ICON_CHECK : ICON_CROSS} ลดเป็นขั้นบันได <strong>${target.label}</strong>
               &nbsp;— เงินได้สุทธิ ≤ ${fmtBaht(targetTaxableIncome)}
               ${optimizeBadgeHTML}
             </span>
-            <span class="target-savings-badge" style="${achievable && netRealSaving < 0 ? "background:var(--red);color:#fff;" : ""}">${savingBadge}</span>
+            <span class="target-savings-badge" style="${achievable && netRealSaving < 0 ? "background:var(--danger);color:#fff;" : ""}">${savingBadge}</span>
             <span class="target-toggle-icon">${chevronSVG}</span>
           </div>
           ${bodyHTML}
@@ -983,7 +991,7 @@ function renderResults(summary, priorityOrder, optimize) {
       .join("");
 
     const optimizeNote = optimize
-      ? `<p style="font-size:0.8rem;color:var(--gold);margin-top:0.2rem">⚡ โหมด Optimize: ระบบคำนวณทุก Scenario แล้วเลือกวิธีที่ประหยัดได้จริงมากที่สุดสำหรับแต่ละขั้น</p>`
+      ? `<p style="font-size:0.8rem;color:var(--primary);margin-top:0.2rem">${ICON_BOLT} โหมด Optimize: ระบบคำนวณทุก Scenario แล้วเลือกวิธีที่ประหยัดได้จริงมากที่สุดสำหรับแต่ละขั้น</p>`
       : `<p>คลิกที่แต่ละเป้าหมายเพื่อดูรายละเอียดแผนที่ใช้เงินน้อยที่สุด</p>`;
 
     targetsHTML = `
