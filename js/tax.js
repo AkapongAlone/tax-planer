@@ -502,9 +502,9 @@ function openPlanModal(targetMax, neededDeduction, taxSaving) {
   _modalCtx = { targetMax, neededDeduction, taxSaving };
 
   document.getElementById("modal-target-title").textContent =
-    `วางแผน — เงินได้สุทธิ ≤ ${fmtNumber(targetMax)} บาท`;
+    `วางแผน — ลดเป็นขั้น ${fmtNumber(targetMax)} บาท`;
   document.getElementById("modal-needed").textContent = fmtBaht(neededDeduction);
-  document.getElementById("modal-saving").textContent  = fmtBaht(taxSaving);
+  document.getElementById("modal-saving").textContent = fmtBaht(taxSaving);
 
   document.getElementById("modal-insure-cap").textContent =
     fmtNumber(_cap.availLifeIns + _cap.availHealthIns + _cap.availParentsHealth);
@@ -545,7 +545,13 @@ function updateModalProgress() {
 
   fill.style.width  = pct + "%";
   fill.className    = "modal-progress-fill" + (pct >= 100 ? " full" : pct >= 60 ? " good" : "");
-  text.textContent  = `จัดสรรได้ ${fmtNumber(totalDeduction)} / ${fmtNumber(needed)} บาท (${pct}%)`;
+  text.textContent  = `จัดสรรแล้ว ${fmtNumber(totalDeduction)} / ${fmtNumber(needed)} บาท`;
+
+  const pctEl = document.getElementById("modal-progress-pct");
+  if (pctEl) {
+    pctEl.textContent = pct + "%";
+    pctEl.className = "modal-progress-pct" + (pct >= 100 ? " pct-full" : pct >= 60 ? " pct-good" : "");
+  }
 
   renderProductSuggestions(insure, invest, donate);
 }

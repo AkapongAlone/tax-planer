@@ -415,11 +415,6 @@
         <div class="modal-header">
           <div class="modal-header-info">
             <h3 class="modal-title" id="modal-target-title">วางแผนลดขั้นบันได</h3>
-            <div class="modal-meta">
-              <span>ลดหย่อนเพิ่ม <strong id="modal-needed">—</strong></span>
-              <span class="modal-meta-sep">·</span>
-              <span>ประหยัดภาษีได้ <strong id="modal-saving" style="color:var(--jade)">—</strong></span>
-            </div>
           </div>
           <button class="modal-close-btn" id="modal-close-btn" aria-label="ปิด">
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
@@ -429,14 +424,63 @@
         </div>
 
         <div class="modal-body">
-          <p class="modal-section-label">กรอกงบประมาณที่ต้องการใช้ลดหย่อน</p>
+          <!-- Hero: key numbers -->
+          <div class="modal-hero">
+            <div class="modal-hero-card hero-needed">
+              <div class="modal-hero-label">
+                ต้องลดหย่อนเพิ่ม
+                <span class="tip-wrap">
+                  <svg class="tip-icon" width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                    <circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.5"/>
+                    <path d="M8 7v4M8 5.25v.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                  </svg>
+                  <span class="tip-bubble">จำนวนเงินลดหย่อนที่คุณต้องเพิ่ม เพื่อให้เงินได้สุทธิลดลงไปอยู่ในขั้นบันไดภาษีที่ต่ำกว่า ยิ่งลดหย่อนมาก เงินได้สุทธิยิ่งน้อย ภาษียิ่งลด</span>
+                </span>
+              </div>
+              <div class="modal-hero-value" id="modal-needed">—</div>
+            </div>
+            <div class="modal-hero-card hero-saving">
+              <div class="modal-hero-label">
+                ประหยัดภาษีได้
+                <span class="tip-wrap">
+                  <svg class="tip-icon" width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                    <circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.5"/>
+                    <path d="M8 7v4M8 5.25v.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                  </svg>
+                  <span class="tip-bubble">จำนวนภาษีที่คุณจะจ่ายน้อยลง เมื่อลดหย่อนครบตามเป้าหมาย เป็นเงินที่คุณได้คืนจริง ๆ จากการวางแผนภาษี</span>
+                </span>
+              </div>
+              <div class="modal-hero-value" id="modal-saving">—</div>
+            </div>
+          </div>
+
+          <!-- Progress -->
+          <div class="modal-progress-wrap">
+            <div class="modal-progress-header">
+              <span class="modal-progress-label">ความคืบหน้า</span>
+              <span class="modal-progress-pct" id="modal-progress-pct">0%</span>
+            </div>
+            <div class="modal-progress-bar">
+              <div class="modal-progress-fill" id="modal-progress-fill"></div>
+            </div>
+            <p class="modal-progress-text" id="modal-progress-text">จัดสรร 0 บาท</p>
+          </div>
+
+          <p class="modal-section-label">จัดสรรงบประมาณลดหย่อน</p>
 
           <div class="modal-alloc">
             <!-- Insurance -->
-            <div class="alloc-row">
-              <div class="alloc-row-left">
+            <div class="alloc-row alloc-insure">
+              <div class="alloc-row-header">
                 <span class="plan-type-badge type-insure alloc-type-badge">ประกัน</span>
-                <span class="alloc-cap-hint">เหลือ <span id="modal-insure-cap">0</span> บาท</span>
+                <span class="tip-wrap">
+                  <svg class="tip-icon tip-icon-sm" width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                    <circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.5"/>
+                    <path d="M8 7v4M8 5.25v.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                  </svg>
+                  <span class="tip-bubble">ลดหย่อนผ่านเบี้ยประกันชีวิต ประกันสุขภาพ และประกันสุขภาพบิดามารดา ได้ทั้งความคุ้มครองและลดภาษี เหมาะกับคนที่ยังไม่มีประกัน</span>
+                </span>
+                <span class="alloc-cap-hint">เหลือใช้ได้ <strong id="modal-insure-cap">0</strong> บาท</span>
               </div>
               <div class="alloc-input-wrap">
                 <input type="number" id="modal-insure-budget" class="alloc-input" placeholder="0" min="0"/>
@@ -445,10 +489,17 @@
             </div>
 
             <!-- Investment -->
-            <div class="alloc-row">
-              <div class="alloc-row-left">
+            <div class="alloc-row alloc-invest">
+              <div class="alloc-row-header">
                 <span class="plan-type-badge type-invest alloc-type-badge">ลงทุน</span>
-                <span class="alloc-cap-hint">เหลือ <span id="modal-invest-cap">0</span> บาท</span>
+                <span class="tip-wrap">
+                  <svg class="tip-icon tip-icon-sm" width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                    <circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.5"/>
+                    <path d="M8 7v4M8 5.25v.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                  </svg>
+                  <span class="tip-bubble">ลดหย่อนผ่านกองทุน SSF, RMF หรือ Thai ESG เงินยังเป็นของคุณและมีโอกาสได้ผลตอบแทนเพิ่ม เหมาะกับคนที่อยากออมระยะยาว</span>
+                </span>
+                <span class="alloc-cap-hint">เหลือใช้ได้ <strong id="modal-invest-cap">0</strong> บาท</span>
               </div>
               <div class="alloc-input-wrap">
                 <input type="number" id="modal-invest-budget" class="alloc-input" placeholder="0" min="0"/>
@@ -457,24 +508,23 @@
             </div>
 
             <!-- Donation -->
-            <div class="alloc-row">
-              <div class="alloc-row-left">
+            <div class="alloc-row alloc-donate">
+              <div class="alloc-row-header">
                 <span class="plan-type-badge type-donate alloc-type-badge">บริจาค</span>
-                <span class="alloc-cap-hint">เหลือ <span id="modal-donate-cap">0</span> บาท</span>
+                <span class="tip-wrap">
+                  <svg class="tip-icon tip-icon-sm" width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                    <circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.5"/>
+                    <path d="M8 7v4M8 5.25v.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                  </svg>
+                  <span class="tip-bubble">บริจาคเพื่อการศึกษาลดหย่อนได้ 2 เท่าของเงินบริจาค ส่วนบริจาคทั่วไปลดได้ 1 เท่า ใช้งบน้อยแต่ลดภาษีได้เยอะ</span>
+                </span>
+                <span class="alloc-cap-hint">เหลือใช้ได้ <strong id="modal-donate-cap">0</strong> บาท</span>
               </div>
               <div class="alloc-input-wrap">
                 <input type="number" id="modal-donate-budget" class="alloc-input" placeholder="0" min="0"/>
                 <span class="alloc-unit">บาท</span>
               </div>
             </div>
-          </div>
-
-          <!-- Progress -->
-          <div class="modal-progress-wrap">
-            <div class="modal-progress-bar">
-              <div class="modal-progress-fill" id="modal-progress-fill"></div>
-            </div>
-            <p class="modal-progress-text" id="modal-progress-text">จัดสรร 0 บาท</p>
           </div>
 
           <!-- Product suggestions (rendered by JS) -->
